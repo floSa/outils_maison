@@ -178,3 +178,111 @@ def previsualiser_renommage_tags(
         if cible != f:
             renommages.append(Renommage(ancien=f, nouveau=cible))
     return renommages
+
+
+# --- A4 : convertir un format audio ------------------------------------------
+
+def convertir_audio(
+    src: str | Path,
+    format_sortie: str,
+    *,
+    bitrate: str | None = None,
+    dossier_sortie: str | Path | None = None,
+) -> Path:
+    """Convertit un fichier audio vers un autre format.
+
+    :param format_sortie: ``flac``, ``mp3``, ``wav`` ou ``m4a``.
+    :param bitrate: pour les formats avec perte, ex. ``"320k"`` (sinon défaut du codec).
+    """
+    source = Path(src)
+    if not source.is_file():
+        raise FileNotFoundError(f"Fichier introuvable : {source}")
+    if format_sortie not in CODECS_AUDIO:
+        raise ValueError(f"Format non géré : {format_sortie} (choix : {', '.join(CODECS_AUDIO)})")
+
+    dossier = Path(dossier_sortie) if dossier_sortie else source.parent
+    dossier.mkdir(parents=True, exist_ok=True)
+    sortie = dossier / f"{source.stem}.{format_sortie}"
+    if sortie.resolve() == source.resolve():
+        sortie = dossier / f"{source.stem}_converti.{format_sortie}"
+
+    codec = list(CODECS_AUDIO[format_sortie])
+    if bitrate and format_sortie in ("mp3", "m4a"):
+        # Remplace la qualité VBR par un bitrate constant si demandé.
+        codec = ["-c:a", codec[1], "-b:a", bitrate]
+    lancer_ffmpeg(["-i", str(source), "-map_metadata", "0", *codec, str(sortie)])
+    return sortie
+
+
+# --- A5 : découper un passage audio ------------------------------------------
+
+def decouper_audio(
+    src: str | Path, debut: str, fin: str, sortie: str | Path | None = None
+) -> Path:
+    """Extrait le passage [debut, fin] d'un audio (sans ré-encoder). Horodatages HH:MM:SS."""
+    source = Path(src)
+    if not source.is_file():
+        raise FileNotFoundError(f"Fichier introuvable : {source}")
+    cible = Path(sortie) if sortie else source.with_name(f"{source.stem}_extrait{source.suffix}")
+    lancer_ffmpeg(
+        ["-ss", str(debut), "-to", str(fin), "-i", str(source), "-c", "copy", str(cible)]
+    )
+    return cible
+
+
+# --- A6 : éditer les tags en masse -------------------------------------------
+
+CHAMPS_TAGS = ("artist", "albumartist", "album", "date", "genre")
+
+
+def editer_tags(
+    dossier: str | Path, tags: dict[str, str], *, recursif: bool = False
+) -> int:
+    """Applique des tags (champs non vides de ``tags``) à tous les audios d'un dossier.
+
+    Champs reconnus : artist, albumartist, album, date, genre. Retourne le nb traité.
+    """
+    from mutagen import File as MutaFile
+
+    base = Path(dossier)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+
+    a_poser = {k: v for k, v in tags.items() if k in CHAMPS_TAGS and v}
+    if not a_poser:
+        return 0
+
+    fichiers = base.rglob("*") if recursif else base.iterdir()
+    n = 0
+    for f in sorted(fichiers):
+        if not f.is_file() or f.suffix.lower() not in EXT_AUDIO:
+            continue
+        audio = MutaFile(str(f), easy=True)
+        if audio is None:
+            continue
+        for k, v in a_poser.items():
+            audio[k] = v
+        audio.save()
+        n += 1
+    return n
+
+
+# --- A7 : normaliser le volume (loudness) ------------------------------------
+
+def normaliser_volume(
+    src: str | Path, *, cible_lufs: float = -14.0, sortie: str | Path | None = None
+) -> Path:
+    """Normalise le volume perçu (loudnorm EBU R128) vers une cible LUFS."""
+    source = Path(src)
+    if not source.is_file():
+        raise FileNotFoundError(f"Fichier introuvable : {source}")
+    cible = Path(sortie) if sortie else source.with_name(f"{source.stem}_norm{source.suffix}")
+    lancer_ffmpeg(
+        [
+            "-i", str(source),
+            "-af", f"loudnorm=I={cible_lufs}:TP=-1.5:LRA=11",
+            "-map_metadata", "0",
+            str(cible),
+        ]
+    )
+    return cible
