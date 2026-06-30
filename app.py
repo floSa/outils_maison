@@ -19,6 +19,7 @@ navigation = st.navigation(
             page("audio_normaliser.py", "Normaliser des FLAC", "🎚️"),
             page("audio_extraire.py", "Extraire l'audio d'une vidéo", "🎵"),
             page("audio_renommer.py", "Renommer depuis les tags", "🏷️"),
+            page("musique_singles.py", "Regrouper les singles", "🎼"),
         ],
         "🖼️ Images": [
             page("images_redimensionner.py", "Redimensionner / compresser", "📐"),
