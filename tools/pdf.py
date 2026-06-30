@@ -175,3 +175,73 @@ def pdf_vers_images(
         crees.append(chemin)
     doc.close()
     return crees
+
+
+# --- P5 : compresser un PDF --------------------------------------------------
+
+def compresser(pdf_path: str | Path, sortie: str | Path | None = None) -> Path:
+    """Allège un PDF (déflation des flux + nettoyage des objets inutiles, via PyMuPDF)."""
+    import fitz
+
+    src = Path(pdf_path)
+    if not src.is_file():
+        raise FileNotFoundError(f"PDF introuvable : {src}")
+    cible = Path(sortie) if sortie else src.with_name(f"{src.stem}_compresse.pdf")
+    doc = fitz.open(str(src))
+    doc.save(str(cible), garbage=4, deflate=True, clean=True)
+    doc.close()
+    return cible
+
+
+# --- P6 : protéger / déprotéger par mot de passe -----------------------------
+
+def proteger(pdf_path: str | Path, mot_de_passe: str, sortie: str | Path | None = None) -> Path:
+    """Chiffre un PDF avec un mot de passe (lecture)."""
+    src = Path(pdf_path)
+    reader = PdfReader(str(src))
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    writer.encrypt(mot_de_passe)
+    cible = Path(sortie) if sortie else src.with_name(f"{src.stem}_protege.pdf")
+    with open(cible, "wb") as f:
+        writer.write(f)
+    return cible
+
+
+def deproteger(pdf_path: str | Path, mot_de_passe: str, sortie: str | Path | None = None) -> Path:
+    """Retire le mot de passe d'un PDF chiffré (nécessite le mot de passe correct)."""
+    src = Path(pdf_path)
+    reader = PdfReader(str(src))
+    if reader.is_encrypted:
+        if not reader.decrypt(mot_de_passe):
+            raise ValueError("Mot de passe incorrect.")
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    cible = Path(sortie) if sortie else src.with_name(f"{src.stem}_dechiffre.pdf")
+    with open(cible, "wb") as f:
+        writer.write(f)
+    return cible
+
+
+# --- P7 : extraire le texte --------------------------------------------------
+
+def extraire_texte(pdf_path: str | Path, sortie: str | Path | None = None) -> tuple[Path, bool]:
+    """Extrait le texte d'un PDF vers un fichier ``.txt`` (texte intégré, pas d'OCR).
+
+    :return: (chemin du .txt, semble_scanne) — ``semble_scanne=True`` si très peu de
+             texte trouvé (PDF probablement composé d'images → un OCR serait nécessaire).
+    """
+    import fitz
+
+    src = Path(pdf_path)
+    if not src.is_file():
+        raise FileNotFoundError(f"PDF introuvable : {src}")
+    doc = fitz.open(str(src))
+    morceaux = [page.get_text() for page in doc]
+    doc.close()
+    texte = "\n".join(morceaux)
+
+    cible = Path(sortie) if sortie else src.with_suffix(".txt")
+    cible.write_text(texte, encoding="utf-8")
+    semble_scanne = len(texte.strip()) < 20 * max(len(morceaux), 1)
+    return cible, semble_scanne

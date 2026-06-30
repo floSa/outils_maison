@@ -86,3 +86,53 @@ def test_images_pdf_aller_retour(tmp_path):
 
     sorties = pdf_vers_images(doc, tmp_path / "rendu", dpi=72)
     assert len(sorties) == 2 and all(p.is_file() for p in sorties)
+
+
+def test_compresser(tmp_path):
+    from tools.pdf import compresser
+
+    src = tmp_path / "src.pdf"
+    _pdf_factice(src, 3)
+    out = compresser(src)
+    assert out.is_file()
+    assert compter_pages(out) == 3
+
+
+def test_proteger_deproteger(tmp_path):
+    from pypdf import PdfReader
+
+    from tools.pdf import deproteger, proteger
+
+    src = tmp_path / "src.pdf"
+    _pdf_factice(src, 2)
+
+    protege = proteger(src, "secret")
+    assert PdfReader(str(protege)).is_encrypted
+
+    with pytest.raises(ValueError):
+        deproteger(protege, "mauvais")
+
+    clair = deproteger(protege, "secret")
+    assert not PdfReader(str(clair)).is_encrypted
+
+
+def test_extraire_texte(tmp_path):
+    import fitz
+
+    from tools.pdf import extraire_texte
+
+    src = tmp_path / "txt.pdf"
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 72), "Bonjour le monde, ceci est un test de texte.")
+    doc.save(str(src))
+    doc.close()
+
+    sortie, scanne = extraire_texte(src)
+    assert "Bonjour le monde" in sortie.read_text(encoding="utf-8")
+    assert scanne is False
+
+    vide = tmp_path / "vide.pdf"
+    _pdf_factice(vide, 1)
+    _, scanne_vide = extraire_texte(vide)
+    assert scanne_vide is True
