@@ -119,3 +119,69 @@ def compresser(
     args += ["-c:a", "aac", "-b:a", "160k", str(cible)]
     lancer_ffmpeg(args)
     return cible
+
+
+# --- V4 : convertir de conteneur ---------------------------------------------
+
+def convertir(
+    video_path: str | Path, format_sortie: str = "mp4", sortie: str | Path | None = None
+) -> Path:
+    """Ré-encode une vidéo vers un autre conteneur (mp4, mkv, webm…) en H.264/AAC."""
+    src = Path(video_path)
+    if not src.is_file():
+        raise FileNotFoundError(f"Vidéo introuvable : {src}")
+    fmt = format_sortie.lower().lstrip(".")
+    cible = Path(sortie) if sortie else src.with_suffix(f".{fmt}")
+    if cible.resolve() == src.resolve():
+        cible = src.with_name(f"{src.stem}_converti.{fmt}")
+    lancer_ffmpeg(["-i", str(src), "-c:v", "libx264", "-crf", "20", "-c:a", "aac", str(cible)])
+    return cible
+
+
+# --- V5 : extraire des images ------------------------------------------------
+
+def extraire_images(
+    video_path: str | Path,
+    dossier_sortie: str | Path | None = None,
+    *,
+    intervalle_s: float = 1.0,
+    format_image: str = "png",
+) -> Path:
+    """Extrait une image toutes les ``intervalle_s`` secondes vers un dossier.
+
+    :return: le dossier de sortie (images nommées ``<nom>_0001.<ext>``…).
+    """
+    src = Path(video_path)
+    if not src.is_file():
+        raise FileNotFoundError(f"Vidéo introuvable : {src}")
+    dossier = Path(dossier_sortie) if dossier_sortie else src.parent / f"{src.stem}_images"
+    dossier.mkdir(parents=True, exist_ok=True)
+    motif = str(dossier / f"{src.stem}_%04d.{format_image}")
+    lancer_ffmpeg(["-i", str(src), "-vf", f"fps=1/{intervalle_s}", motif])
+    return dossier
+
+
+# --- V6 : créer un GIF -------------------------------------------------------
+
+def creer_gif(
+    video_path: str | Path,
+    debut: str = "0",
+    duree: float = 3.0,
+    *,
+    fps: int = 12,
+    largeur: int = 480,
+    sortie: str | Path | None = None,
+) -> Path:
+    """Crée un GIF depuis un extrait de vidéo (palette optimisée pour la qualité)."""
+    src = Path(video_path)
+    if not src.is_file():
+        raise FileNotFoundError(f"Vidéo introuvable : {src}")
+    cible = Path(sortie) if sortie else src.with_suffix(".gif")
+    filtre = (
+        f"fps={fps},scale={largeur}:-1:flags=lanczos,"
+        "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+    )
+    lancer_ffmpeg(
+        ["-ss", str(debut), "-t", str(duree), "-i", str(src), "-vf", filtre, str(cible)]
+    )
+    return cible
