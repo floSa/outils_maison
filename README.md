@@ -42,12 +42,12 @@ notebooks_archive/# notebooks d'origine, conservés en référence
 
 | Catégorie | Outils |
 |---|---|
-| 🎵 Audio | Normaliser des FLAC · Extraire l'audio d'une vidéo · Renommer depuis les tags · Regrouper les singles |
-| 🖼️ Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ |
-| 🎬 Vidéo | Fusionner · Découper · Compresser |
-| 📄 PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF |
-| 📁 Fichiers | Nettoyer les noms · Renommer en masse · Doublons · Arborescence → Excel |
-| 🔤 Données | Convertir CSV ↔ Excel ↔ JSON |
+| 🎵 Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
+| 🖼️ Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ · Auditer les fonds triés¹ |
+| 🎬 Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
+| 📄 PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
+| 📁 Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
+| 🔤 Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | 📚 Biblio | Trier des cotes |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
