@@ -45,3 +45,36 @@ def convertir_tableau(
     else:  # json
         df.to_json(cible, orient="records", force_ascii=False, indent=2)
     return cible
+
+
+# --- T2 : dédupliquer / trier les lignes d'un fichier texte -------------------
+
+def traiter_lignes(
+    texte: str,
+    *,
+    dedupliquer: bool = True,
+    trier: bool = False,
+    ignorer_casse: bool = False,
+    retirer_vides: bool = True,
+) -> tuple[list[str], int]:
+    """Nettoie une liste de lignes. Retourne (lignes_resultat, nb_lignes_retirees)."""
+    lignes = [l.rstrip("\n") for l in texte.splitlines()]
+    n_depart = len(lignes)
+
+    if retirer_vides:
+        lignes = [l for l in lignes if l.strip()]
+
+    if dedupliquer:
+        vues: set[str] = set()
+        uniques = []
+        for l in lignes:
+            cle = l.lower() if ignorer_casse else l
+            if cle not in vues:
+                vues.add(cle)
+                uniques.append(l)
+        lignes = uniques
+
+    if trier:
+        lignes = sorted(lignes, key=lambda l: l.lower() if ignorer_casse else l)
+
+    return lignes, n_depart - len(lignes)

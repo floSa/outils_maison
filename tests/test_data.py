@@ -28,3 +28,19 @@ def test_format_sortie_invalide(tmp_path):
 def test_source_absente(tmp_path):
     with pytest.raises(FileNotFoundError):
         data.convertir_tableau(tmp_path / "nope.csv", "json")
+
+
+def test_traiter_lignes_dedup():
+    lignes, retirees = data.traiter_lignes("b\na\nb\n\na", dedupliquer=True)
+    assert lignes == ["b", "a"]
+    assert retirees == 3
+
+
+def test_traiter_lignes_trier_casse():
+    lignes, _ = data.traiter_lignes("Banane\nabricot\nCerise", trier=True, ignorer_casse=True)
+    assert lignes == ["abricot", "Banane", "Cerise"]
+
+
+def test_traiter_lignes_garde_ordre_sans_tri():
+    lignes, _ = data.traiter_lignes("z\na\nm", dedupliquer=False, trier=False)
+    assert lignes == ["z", "a", "m"]
