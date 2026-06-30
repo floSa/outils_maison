@@ -244,6 +244,78 @@ def prochain_id(dossier_tries: str | Path) -> int:
     return (max(ids) + 1) if ids else 1
 
 
+# --- Audit d'un dossier déjà trié --------------------------------------------
+
+@dataclass
+class Suspect:
+    ident: str
+    score_propre: int       # inliers entre NNN_po et NNN_pa
+    meilleur_ident: str     # paysage qui correspond le mieux au portrait
+    meilleur_score: int
+
+    @property
+    def probable_erreur(self) -> bool:
+        """Le portrait correspond bien mieux à un AUTRE paysage qu'au sien."""
+        return (
+            self.meilleur_ident != self.ident
+            and self.meilleur_score >= 2 * max(self.score_propre, 1)
+            and self.meilleur_score >= SEUIL_INLIERS
+        )
+
+
+def auditer(
+    dossier_tries: str | Path,
+    *,
+    seuil_suspect: int = SEUIL_INLIERS,
+    log: Callable[[str], None] | None = None,
+) -> list[Suspect]:
+    """Repère les couples ``NNN_pa``/``NNN_po`` probablement mal classés.
+
+    Optimisation : on calcule d'abord le score « propre » de chaque couple (rapide),
+    puis on ne cherche le vrai paysage que pour les couples au score propre faible.
+    """
+    base = Path(dossier_tries)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+
+    def _log(m: str) -> None:
+        if log:
+            log(m)
+
+    pa = {f.stem[:-3]: f for f in base.glob("*_pa.*")}
+    po = {f.stem[:-3]: f for f in base.glob("*_po.*")}
+    ids = sorted(pa.keys() & po.keys())
+    if not ids:
+        return []
+
+    sift = _moteur_sift()
+    _log(f"Descripteurs des {len(ids)} paysages…")
+    d_pa = {n: descripteurs(pa[n], sift) for n in ids}
+
+    _log("Score propre de chaque couple…")
+    suspects: list[tuple[str, int, object]] = []
+    for n in ids:
+        dpo = descripteurs(po[n], sift)
+        propre = compter_inliers(dpo, d_pa[n])
+        if propre < seuil_suspect:
+            suspects.append((n, propre, dpo))
+
+    _log(f"{len(suspects)} couple(s) suspect(s) à vérifier en profondeur…")
+    resultats: list[Suspect] = []
+    for n, propre, dpo in suspects:
+        meilleur_n, meilleur_s = n, propre
+        for m in ids:
+            s = compter_inliers(dpo, d_pa[m])
+            if s > meilleur_s:
+                meilleur_s, meilleur_n = s, m
+        resultats.append(
+            Suspect(ident=n, score_propre=propre, meilleur_ident=meilleur_n, meilleur_score=meilleur_s)
+        )
+    # Les erreurs probables d'abord.
+    resultats.sort(key=lambda s: (not s.probable_erreur, s.score_propre))
+    return resultats
+
+
 def ranger(
     couples: list[Couple],
     dossier_tries: str | Path,

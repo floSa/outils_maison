@@ -101,3 +101,19 @@ def test_prochain_id_et_ranger(tmp_path):
     assert (tries / "002_pa.png").is_file()
     assert (tries / "002_po.png").is_file()
     assert pa.is_file()  # copie : source conservée
+
+
+def test_auditer_detecte_erreur(tmp_path):
+    # 3 couples : 001 et 002 corrects, 003 volontairement mal classé
+    # (003_po est en réalité le portrait du paysage 001).
+    pa1, pa2, pa3 = _paysage(1), _paysage(2), _paysage(3)
+    _ecrire(tmp_path / "001_pa.png", pa1)
+    _ecrire(tmp_path / "001_po.png", _portrait_depuis(pa1))
+    _ecrire(tmp_path / "002_pa.png", pa2)
+    _ecrire(tmp_path / "002_po.png", _portrait_depuis(pa2))
+    _ecrire(tmp_path / "003_pa.png", pa3)
+    _ecrire(tmp_path / "003_po.png", _portrait_depuis(pa1))  # erreur : appartient à 001
+
+    suspects = fonds.auditer(tmp_path, seuil_suspect=40)
+    erreurs = [s for s in suspects if s.probable_erreur]
+    assert any(s.ident == "003" and s.meilleur_ident == "001" for s in erreurs)
