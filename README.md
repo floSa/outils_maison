@@ -42,7 +42,7 @@ notebooks_archive/# notebooks d'origine, conservés en référence
 
 | Catégorie | Outils |
 |---|---|
-| 🎵 Audio | Normaliser des FLAC · Extraire l'audio d'une vidéo · Renommer depuis les tags |
+| 🎵 Audio | Normaliser des FLAC · Extraire l'audio d'une vidéo · Renommer depuis les tags · Regrouper les singles |
 | 🖼️ Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ |
 | 🎬 Vidéo | Fusionner · Découper · Compresser |
 | 📄 PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF |
