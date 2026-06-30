@@ -2,9 +2,13 @@ from tools.files import (
     annuler,
     appliquer,
     arborescence_vers_df,
+    comparer_dossiers,
     nettoyer_nom,
     previsualiser,
     previsualiser_remplacement,
+    previsualiser_rangement,
+    previsualiser_renommage_csv,
+    statistiques,
     trouver_doublons_fichiers,
 )
 
@@ -81,3 +85,54 @@ def test_arborescence_vers_df(tmp_path):
     df = arborescence_vers_df([tmp_path])
     assert "Niveau 1" in df.columns
     assert "artiste" in df["Niveau 1"].values
+
+
+def test_rangement_par_type(tmp_path):
+    (tmp_path / "photo.jpg").write_text("x")
+    (tmp_path / "musique.mp3").write_text("x")
+    (tmp_path / "doc.pdf").write_text("x")
+    rens = previsualiser_rangement(tmp_path, mode="type")
+    cibles = {r.ancien.name: r.nouveau.parent.name for r in rens}
+    assert cibles == {"photo.jpg": "Images", "musique.mp3": "Audio", "doc.pdf": "Documents"}
+
+
+def test_rangement_puis_appliquer(tmp_path):
+    (tmp_path / "a.png").write_text("x")
+    rens = previsualiser_rangement(tmp_path, mode="type")
+    appliquer(rens, tmp_path)
+    assert (tmp_path / "Images" / "a.png").is_file()
+
+
+def test_statistiques(tmp_path):
+    (tmp_path / "a.txt").write_text("12345")
+    (tmp_path / "b.jpg").write_text("12")
+    (tmp_path / "vide").mkdir()
+    stats = statistiques(tmp_path)
+    assert stats["nb_fichiers"] == 2
+    assert stats["taille_totale"] == 7
+    assert stats["plus_gros"][0][0].name == "a.txt"
+    assert any(d.name == "vide" for d in stats["dossiers_vides"])
+
+
+def test_comparer_dossiers(tmp_path):
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    (a / "commun.txt").write_text("meme")
+    (b / "commun.txt").write_text("meme")
+    (a / "seul_a.txt").write_text("x")
+    (b / "different.txt").write_text("court")
+    (a / "different.txt").write_text("beaucoup plus long")
+    res = comparer_dossiers(a, b)
+    assert res["seulement_a"] == ["different.txt", "seul_a.txt"] or "seul_a.txt" in res["seulement_a"]
+    assert "different.txt" in res["differents"]
+    assert res["identiques"] == 1
+
+
+def test_renommage_csv(tmp_path):
+    (tmp_path / "vieux.txt").write_text("x")
+    csv = tmp_path / "map.csv"
+    csv.write_text("ancien,nouveau\nvieux.txt,neuf.txt\n", encoding="utf-8")
+    rens = previsualiser_renommage_csv(tmp_path, csv)
+    assert len(rens) == 1
+    assert rens[0].nouveau.name == "neuf.txt"

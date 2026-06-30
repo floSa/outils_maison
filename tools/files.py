@@ -83,6 +83,7 @@ def appliquer(renommages: list[Renommage], dossier_journal: str | Path) -> Path:
     for r in renommages:
         if r.nouveau.exists():
             continue
+        r.nouveau.parent.mkdir(parents=True, exist_ok=True)
         r.ancien.rename(r.nouveau)
         journal.append({"de": str(r.nouveau), "vers": str(r.ancien)})
 
@@ -232,3 +233,170 @@ def exporter_excel(df, chemin: str | Path) -> Path:
     cible.parent.mkdir(parents=True, exist_ok=True)
     df.to_excel(cible, index=False)
     return cible
+
+
+# --- F4 : ranger automatiquement par type ou par date ------------------------
+
+CATEGORIES = {
+    "Images": (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".heic"),
+    "Vidéos": (".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v", ".wmv"),
+    "Audio": (".mp3", ".flac", ".wav", ".m4a", ".ogg", ".opus", ".aac", ".wma"),
+    "Documents": (".pdf", ".doc", ".docx", ".odt", ".txt", ".xlsx", ".csv", ".pptx", ".md"),
+    "Archives": (".zip", ".rar", ".7z", ".tar", ".gz"),
+}
+
+
+def _categorie(suffixe: str) -> str:
+    s = suffixe.lower()
+    for nom, exts in CATEGORIES.items():
+        if s in exts:
+            return nom
+    return "Autres"
+
+
+def previsualiser_rangement(
+    dossier: str | Path, *, mode: str = "type"
+) -> list[Renommage]:
+    """Calcule le rangement des fichiers d'un dossier en sous-dossiers (sans modifier).
+
+    :param mode: ``"type"`` (par catégorie d'extension) ou ``"date"`` (année/mois de modif).
+    """
+    base = Path(dossier)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+    if mode not in ("type", "date"):
+        raise ValueError("mode doit être 'type' ou 'date'.")
+
+    import datetime as _dt
+
+    renommages: list[Renommage] = []
+    for f in base.iterdir():
+        if not f.is_file():
+            continue
+        if mode == "type":
+            sous = _categorie(f.suffix)
+        else:
+            d = _dt.datetime.fromtimestamp(f.stat().st_mtime)
+            sous = f"{d.year}/{d.month:02d}"
+        cible = base / sous / f.name
+        if cible != f:
+            renommages.append(Renommage(ancien=f, nouveau=cible))
+    return renommages
+
+
+# --- F5 : statistiques d'un dossier ------------------------------------------
+
+def statistiques(dossier: str | Path, *, recursif: bool = True, top: int = 15) -> dict:
+    """Statistiques d'un dossier : volume par catégorie, plus gros fichiers, dossiers vides."""
+    base = Path(dossier)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+
+    it = base.rglob("*") if recursif else base.iterdir()
+    par_categorie: dict[str, list[int]] = {}
+    tailles: list[tuple[Path, int]] = []
+    nb, total = 0, 0
+    for f in it:
+        if f.is_file():
+            taille = f.stat().st_size
+            nb += 1
+            total += taille
+            cat = _categorie(f.suffix)
+            agg = par_categorie.setdefault(cat, [0, 0])
+            agg[0] += 1
+            agg[1] += taille
+            tailles.append((f, taille))
+
+    dossiers_vides = [
+        d for d in (base.rglob("*") if recursif else base.iterdir())
+        if d.is_dir() and not any(d.iterdir())
+    ]
+    tailles.sort(key=lambda t: t[1], reverse=True)
+    return {
+        "nb_fichiers": nb,
+        "taille_totale": total,
+        "par_categorie": par_categorie,
+        "plus_gros": tailles[:top],
+        "dossiers_vides": dossiers_vides,
+    }
+
+
+# --- F7 : comparer deux dossiers ---------------------------------------------
+
+def comparer_dossiers(
+    dossier_a: str | Path, dossier_b: str | Path, *, par_hash: bool = False
+) -> dict:
+    """Compare deux arborescences (par chemin relatif).
+
+    :param par_hash: si True, compare le contenu (SHA-1) ; sinon la taille (rapide).
+    :return: dict avec ``seulement_a``, ``seulement_b``, ``differents`` (chemins relatifs).
+    """
+    a, b = Path(dossier_a), Path(dossier_b)
+    if not a.is_dir() or not b.is_dir():
+        raise NotADirectoryError("Les deux dossiers doivent exister.")
+
+    def index(racine: Path) -> dict[str, Path]:
+        return {
+            str(p.relative_to(racine)).replace("\\", "/"): p
+            for p in racine.rglob("*")
+            if p.is_file()
+        }
+
+    ia, ib = index(a), index(b)
+    communs = ia.keys() & ib.keys()
+    differents = []
+    for rel in sorted(communs):
+        fa, fb = ia[rel], ib[rel]
+        if par_hash:
+            diff = _hash_fichier(fa) != _hash_fichier(fb)
+        else:
+            diff = fa.stat().st_size != fb.stat().st_size
+        if diff:
+            differents.append(rel)
+
+    return {
+        "seulement_a": sorted(ia.keys() - ib.keys()),
+        "seulement_b": sorted(ib.keys() - ia.keys()),
+        "differents": differents,
+        "identiques": len(communs) - len(differents),
+    }
+
+
+# --- T3 : renommer des fichiers depuis un CSV --------------------------------
+
+def previsualiser_renommage_csv(
+    dossier: str | Path,
+    csv_path: str | Path,
+    *,
+    col_ancien: str = "ancien",
+    col_nouveau: str = "nouveau",
+) -> list[Renommage]:
+    """Calcule les renommages depuis un CSV de correspondances (ancien → nouveau).
+
+    Le CSV doit avoir deux colonnes (par défaut ``ancien`` et ``nouveau``) contenant
+    les **noms de fichiers** (pas les chemins complets).
+    """
+    import csv as _csv
+
+    base = Path(dossier)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+
+    renommages: list[Renommage] = []
+    with open(csv_path, encoding="utf-8-sig", newline="") as f:
+        lecteur = _csv.DictReader(f)
+        if col_ancien not in (lecteur.fieldnames or []) or col_nouveau not in (lecteur.fieldnames or []):
+            raise ValueError(
+                f"Le CSV doit contenir les colonnes « {col_ancien} » et « {col_nouveau} »."
+            )
+        for ligne in lecteur:
+            ancien = (ligne.get(col_ancien) or "").strip()
+            nouveau = (ligne.get(col_nouveau) or "").strip()
+            if not ancien or not nouveau:
+                continue
+            src = base / ancien
+            if src.is_file():
+                cible = base / nouveau
+                if cible != src:
+                    renommages.append(Renommage(ancien=src, nouveau=cible))
+    return renommages
