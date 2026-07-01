@@ -14,6 +14,7 @@ OpenCV est importé paresseusement (extra `vision`, ~60 Mo).
 
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -314,6 +315,81 @@ def auditer(
     # Les erreurs probables d'abord.
     resultats.sort(key=lambda s: (not s.probable_erreur, s.score_propre))
     return resultats
+
+
+def fichier_pour(dossier: str | Path, ident: str, suffixe: str) -> Path | None:
+    """Retrouve le fichier ``<ident>_<suffixe>.*`` (pa/po) d'un dossier trié."""
+    for f in sorted(Path(dossier).glob(f"{ident}_{suffixe}.*")):
+        return f
+    return None
+
+
+def sauver_audit(suspects: list[Suspect], dossier_tries: str | Path) -> Path:
+    """Sauvegarde le résultat d'audit en JSON (pour rechargement sans recalcul)."""
+    from dataclasses import asdict
+
+    chemin = Path(dossier_tries) / ".audit_fonds.json"
+    chemin.write_text(
+        json.dumps([asdict(s) for s in suspects], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return chemin
+
+
+def charger_audit(dossier_tries: str | Path) -> list[Suspect] | None:
+    """Recharge un audit précédent depuis le JSON, ou None s'il n'existe pas."""
+    chemin = Path(dossier_tries) / ".audit_fonds.json"
+    if not chemin.is_file():
+        return None
+    data = json.loads(chemin.read_text(encoding="utf-8"))
+    return [Suspect(**d) for d in data]
+
+
+def rapport_html(suspects: list[Suspect], dossier_tries: str | Path) -> str:
+    """Construit un rapport HTML : par suspect, portrait + paysage actuel + proposé."""
+    base = Path(dossier_tries)
+
+    def img(ident: str, suffixe: str) -> str:
+        f = fichier_pour(base, ident, suffixe)
+        if not f:
+            return '<div class="vide">(manquant)</div>'
+        return f'<img src="{f.name}" loading="lazy">'
+
+    cartes = []
+    for s in suspects:
+        classe = "erreur" if s.probable_erreur else "faible"
+        cartes.append(f"""
+        <div class="carte {classe}">
+          <div class="tete">{s.ident}_po
+            {'<span class="tag">erreur probable</span>' if s.probable_erreur else '<span class="tag gris">score faible</span>'}
+          </div>
+          <div class="trio">
+            <figure>{img(s.ident, "po")}<figcaption>portrait {s.ident}_po</figcaption></figure>
+            <figure>{img(s.ident, "pa")}<figcaption>paysage actuel {s.ident}_pa<br>score {s.score_propre}</figcaption></figure>
+            <figure>{img(s.meilleur_ident, "pa")}<figcaption>proposé {s.meilleur_ident}_pa<br>score {s.meilleur_score}</figcaption></figure>
+          </div>
+        </div>""")
+
+    nb_err = sum(s.probable_erreur for s in suspects)
+    return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<title>Audit Fonds_Tries</title>
+<style>
+ body{{font-family:system-ui,sans-serif;margin:1.5rem;background:#111;color:#eee}}
+ h1{{font-size:1.3rem}} .resume{{color:#aaa;margin-bottom:1rem}}
+ .carte{{border:1px solid #333;border-radius:8px;padding:.6rem;margin:.6rem 0;background:#1a1a1a}}
+ .carte.erreur{{border-color:#c0392b}} .tete{{font-weight:600;margin-bottom:.4rem}}
+ .tag{{background:#c0392b;color:#fff;border-radius:4px;padding:.05rem .4rem;font-size:.75rem;margin-left:.4rem}}
+ .tag.gris{{background:#555}}
+ .trio{{display:flex;gap:.6rem;flex-wrap:wrap}}
+ figure{{margin:0;text-align:center}} img{{height:200px;border-radius:4px;background:#000}}
+ figcaption{{font-size:.75rem;color:#bbb;margin-top:.2rem}}
+ .vide{{height:200px;display:flex;align-items:center;justify-content:center;color:#888;width:150px;border:1px dashed #444}}
+</style></head><body>
+<h1>Audit des fonds triés</h1>
+<div class="resume">{len(suspects)} couple(s) à score faible, dont <b>{nb_err}</b> erreur(s) probable(s).
+Portrait — paysage actuel — paysage proposé. L'audit ne corrige rien : à vérifier à l'œil.</div>
+{''.join(cartes)}
+</body></html>"""
 
 
 def ranger(

@@ -117,3 +117,17 @@ def test_auditer_detecte_erreur(tmp_path):
     suspects = fonds.auditer(tmp_path, seuil_suspect=40)
     erreurs = [s for s in suspects if s.probable_erreur]
     assert any(s.ident == "003" and s.meilleur_ident == "001" for s in erreurs)
+
+
+def test_audit_cache_et_rapport(tmp_path):
+    for n in ("001", "471"):
+        _ecrire(tmp_path / f"{n}_pa.png", _paysage(1))
+        _ecrire(tmp_path / f"{n}_po.png", _portrait_depuis(_paysage(1)))
+    sus = [fonds.Suspect("001", 4, "471", 500)]
+
+    fonds.sauver_audit(sus, tmp_path)
+    recharge = fonds.charger_audit(tmp_path)
+    assert recharge[0].ident == "001" and recharge[0].probable_erreur
+
+    html = fonds.rapport_html(sus, tmp_path)
+    assert "001_po.png" in html and "471_pa.png" in html
