@@ -32,6 +32,7 @@ navigation = st.navigation(
             page("images_renumeroter.py", "Renuméroter", "🔢"),
             page("fonds_ecran.py", "Apparier des fonds d'écran", "🖼️"),
             page("fonds_audit.py", "Auditer les fonds triés", "🔎"),
+            page("fonds_dedup.py", "Dédupliquer les fonds triés", "🧹"),
         ],
         "🎬 Vidéo": [
             page("video_merge.py", "Fusionner", "🎬"),

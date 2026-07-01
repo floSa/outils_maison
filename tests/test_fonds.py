@@ -131,3 +131,42 @@ def test_audit_cache_et_rapport(tmp_path):
 
     html = fonds.rapport_html(sus, tmp_path)
     assert "001_po.png" in html and "471_pa.png" in html
+
+
+def _biblio_dedup(tmp_path):
+    # 001 : bon couple unique ; 002 : copie exacte de 001 (doublon complet)
+    # 003 : cassé — pa unique (graine 3), po = copie du po de 001 (graine 2)
+    _ecrire(tmp_path / "001_pa.png", _paysage(1))
+    _ecrire(tmp_path / "001_po.png", _paysage(2))
+    _ecrire(tmp_path / "002_pa.png", _paysage(1))
+    _ecrire(tmp_path / "002_po.png", _paysage(2))
+    _ecrire(tmp_path / "003_pa.png", _paysage(3))
+    _ecrire(tmp_path / "003_po.png", _paysage(2))
+
+
+def test_deduplication_plan(tmp_path):
+    _biblio_dedup(tmp_path)
+    plan = fonds.plan_deduplication(tmp_path, suspects={"003"}, seuil_hash=4)
+    noms_doublons = {f.name for f in plan.doublons}
+    noms_verif = {f.name for f in plan.a_verifier}
+
+    assert plan.gardes == ["001"]
+    assert {"002_pa.png", "002_po.png", "003_po.png"} <= noms_doublons
+    assert "003_pa.png" in noms_verif       # unique → jamais dans Doublons
+
+    plan2 = fonds.plan_deduplication(tmp_path, suspects={"003"}, confirmes_ok={"003"})
+    assert "003" in plan2.gardes
+
+
+def test_deduplication_applique_et_annule(tmp_path):
+    _biblio_dedup(tmp_path)
+    plan = fonds.plan_deduplication(tmp_path, suspects={"003"})
+    fonds.appliquer_deduplication(plan, tmp_path)
+    assert (tmp_path / "Doublons" / "002_pa.png").is_file()
+    assert (tmp_path / "A_verifier" / "003_pa.png").is_file()
+    assert not (tmp_path / "002_pa.png").exists()
+
+    n = fonds.annuler_deduplication(tmp_path)
+    assert n >= 3
+    assert (tmp_path / "002_pa.png").is_file()
+    assert (tmp_path / "003_pa.png").is_file()

@@ -392,6 +392,125 @@ Portrait — paysage actuel — paysage proposé. L'audit ne corrige rien : à v
 </body></html>"""
 
 
+# --- Déduplication d'un dossier trié (NNN_pa / NNN_po) -----------------------
+
+@dataclass
+class PlanDedup:
+    gardes: list[str]              # numéros conservés (collection propre)
+    doublons: list[Path]          # fichiers redondants → dossier Doublons/
+    a_verifier: list[Path]        # images uniques sans partenaire → A_verifier/
+
+
+def _hash_par_numero(dossier: Path, suffixe: str) -> dict[str, tuple[Path, object]]:
+    """{numero: (fichier, phash)} pour tous les ``NNN_<suffixe>.*`` d'un dossier."""
+    out: dict[str, tuple[Path, object]] = {}
+    for f in sorted(dossier.glob(f"*_{suffixe}.*")):
+        num = f.stem[:-3]  # retire "_pa"/"_po"
+        try:
+            out[num] = (f, _phash(f))
+        except Exception:
+            continue
+    return out
+
+
+def plan_deduplication(
+    dossier_tries: str | Path,
+    *,
+    suspects: set[str],
+    confirmes_ok: set[str] = frozenset(),
+    seuil_hash: int = 4,
+) -> PlanDedup:
+    """Calcule quoi conserver / isoler, sans rien déplacer.
+
+    - Un numéro est un « bon couple » si son ``pa`` s'apparie à son ``po``
+      (déduit de l'audit : tout ce qui n'est PAS suspect, plus ``confirmes_ok``).
+    - Les bons couples en double (même paysage ET même portrait) → on garde le 1er,
+      les copies vont dans **Doublons**.
+    - Pour un numéro « cassé » (suspect), chaque image va dans **Doublons** si son
+      contenu existe déjà dans un couple conservé, sinon dans **A_verifier** (unique).
+    """
+    base = Path(dossier_tries)
+    pa = _hash_par_numero(base, "pa")
+    po = _hash_par_numero(base, "po")
+    nums = sorted(set(pa) & set(po))
+
+    suspects = set(suspects) - set(confirmes_ok)
+
+    def proche(h1, h2) -> bool:
+        return (h1 - h2) <= seuil_hash
+
+    gardes: list[str] = []
+    doublons: list[Path] = []
+    a_verifier: list[Path] = []
+    kept: list[tuple[object, object, str]] = []  # (pa_hash, po_hash, num)
+
+    for n in nums:
+        if n in suspects:
+            continue
+        ph, oh = pa[n][1], po[n][1]
+        if any(proche(ph, kph) and proche(oh, koh) for kph, koh, _ in kept):
+            doublons += [pa[n][0], po[n][0]]        # couple entièrement redondant
+        else:
+            gardes.append(n)
+            kept.append((ph, oh, n))
+
+    kept_pa = [kph for kph, _, _ in kept]
+    kept_po = [koh for _, koh, _ in kept]
+
+    for n in sorted(suspects):
+        for dic, kept_hashes in ((pa, kept_pa), (po, kept_po)):
+            if n not in dic:
+                continue
+            f, h = dic[n]
+            if any(proche(h, kh) for kh in kept_hashes):
+                doublons.append(f)      # copie redondante d'un contenu conservé
+            else:
+                a_verifier.append(f)    # image unique orpheline → à revoir
+
+    return PlanDedup(gardes=gardes, doublons=doublons, a_verifier=a_verifier)
+
+
+def appliquer_deduplication(
+    plan: PlanDedup,
+    dossier_tries: str | Path,
+    *,
+    log: Callable[[str], None] | None = None,
+) -> Path:
+    """Déplace les fichiers du plan vers Doublons/ et A_verifier/, écrit un journal."""
+    base = Path(dossier_tries)
+    journal: list[dict[str, str]] = []
+    for fichiers, sous in ((plan.doublons, "Doublons"), (plan.a_verifier, "A_verifier")):
+        dest = base / sous
+        for f in fichiers:
+            if not f.exists():
+                continue
+            dest.mkdir(parents=True, exist_ok=True)
+            cible = dest / f.name
+            shutil.move(str(f), str(cible))
+            journal.append({"de": str(cible), "vers": str(f)})
+        if fichiers and log:
+            log(f"{len(fichiers)} fichier(s) → {sous}/")
+
+    chemin = base / ".dedup_undo.json"
+    chemin.write_text(json.dumps(journal, ensure_ascii=False, indent=2), encoding="utf-8")
+    return chemin
+
+
+def annuler_deduplication(dossier_tries: str | Path) -> int:
+    """Restaure les fichiers déplacés par la déduplication. Retourne le nb restauré."""
+    chemin = Path(dossier_tries) / ".dedup_undo.json"
+    if not chemin.is_file():
+        raise FileNotFoundError(f"Aucun journal de déduplication dans {dossier_tries}")
+    entrees = json.loads(chemin.read_text(encoding="utf-8"))
+    n = 0
+    for e in entrees:
+        de, vers = Path(e["de"]), Path(e["vers"])
+        if de.exists() and not vers.exists():
+            shutil.move(str(de), str(vers))
+            n += 1
+    return n
+
+
 def ranger(
     couples: list[Couple],
     dossier_tries: str | Path,
