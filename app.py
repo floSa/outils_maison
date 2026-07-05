@@ -67,6 +67,7 @@ navigation = st.navigation(
         ],
         "📚 Biblio": [
             page("biblio_cotes.py", "Trier des cotes", "📇"),
+            page("biblio_dispo.py", "Vérifier la disponibilité BM Lyon", "📗"),
         ],
     }
 )

@@ -48,13 +48,16 @@ notebooks_archive/# notebooks d'origine, conservés en référence
 | 📄 PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
 | 📁 Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
 | 🔤 Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
-| 📚 Biblio | Trier des cotes |
+| 📚 Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon² |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
 >
 > ¹ L'appariement de fonds d'écran (paysage ↔ portrait, par SIFT + RANSAC) nécessite
 > l'extra `vision` : `uv sync --extra vision`.
+>
+> ² La vérification BM Lyon nécessite l'extra `scraping` :
+> `uv sync --extra scraping` puis `uv run playwright install chromium`.
 
 ## Tests
 

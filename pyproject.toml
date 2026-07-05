@@ -24,6 +24,11 @@ dependencies = [
 vision = [
     "opencv-python>=4.10",
 ]
+# Vérification de disponibilité au catalogue BM Lyon (scraping Playwright).
+# Après install :  uv run playwright install chromium
+scraping = [
+    "playwright>=1.40",
+]
 
 [dependency-groups]
 dev = [
