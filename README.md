@@ -1,44 +1,15 @@
-# 🧰 Boîte à outils
+# Boîte à outils
 
-Petite application **Streamlit** regroupant des utilitaires locaux pour gérer
-fichiers, médias et catalogues. Chaque outil est un onglet ; la logique métier
-vit dans le package `tools/` (fonctions pures, testables), l'interface dans `pages/`.
+**Application Streamlit locale qui regroupe, sous une navigation unique, une collection d'utilitaires personnels pour fichiers, médias et catalogues.**
 
-## Installation
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![uv](https://img.shields.io/badge/uv-package_manager-DE5FE9?logo=uv&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.40-FF4B4B?logo=streamlit&logoColor=white)
 
-Projet géré avec [`uv`](https://docs.astral.sh/uv/).
+Chaque outil est un onglet ; la logique métier vit dans le package `tools/`
+(fonctions pures, testables), l'interface dans `pages/`.
 
-```bash
-uv sync                    # dépendances de base
-uv sync --extra vision     # + appariement de fonds d'écran (OpenCV seul, ~60 Mo)
-```
-
-## Lancer l'application
-
-```bash
-uv run streamlit run app.py
-```
-
-## Structure
-
-```
-app.py            # entrée Streamlit (navigation multipage)
-tools/            # logique pure, sans Streamlit (testable)
-  ffmpeg_utils.py #   accès au binaire ffmpeg embarqué
-  audio.py        #   normalisation FLAC, extraction, renommage par tags
-  images.py       #   redimensionner, convertir, dédupliquer, renuméroter
-  video.py        #   fusionner, découper, compresser
-  pdf.py          #   extraire, fusionner, pages, images ↔ PDF
-  files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
-  data.py         #   conversions CSV / Excel / JSON
-  biblio.py       #   tri de cotes de bibliothèque
-  fonds.py        #   appariement fonds d'écran SIFT+RANSAC (extra vision)
-pages/            # une page Streamlit par outil
-tests/            # tests pytest (logique + rendu des pages)
-notebooks_archive/# notebooks d'origine, conservés en référence
-```
-
-## Architecture (vue rapide)
+## Architecture
 
 Principe : **UI fine, logique pure**. Chaque page de `pages/` ne fait qu'appeler une
 fonction de `tools/` (testable sans Streamlit) et afficher son résultat.
@@ -55,17 +26,34 @@ flowchart TD
 Détails : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (le COMMENT) et
 [docs/CADRAGE.md](docs/CADRAGE.md) (le POURQUOI).
 
+## Démarrage
+
+**Prérequis** : Python `>=3.12` et [`uv`](https://docs.astral.sh/uv/).
+
+```bash
+uv sync                    # dépendances de base
+uv sync --extra vision     # + appariement de fonds d'écran (OpenCV seul, ~60 Mo)
+uv sync --extra scraping   # + vérification BM Lyon (Playwright)
+uv run playwright install chromium   # navigateur pour l'extra scraping
+```
+
+Lancer l'application :
+
+```bash
+uv run streamlit run app.py
+```
+
 ## Outils
 
 | Catégorie | Outils |
 |---|---|
-| 🎵 Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
-| 🖼️ Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ · Auditer les fonds triés¹ |
-| 🎬 Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
-| 📄 PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
-| 📁 Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
-| 🔤 Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
-| 📚 Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon² |
+| Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
+| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ · Auditer les fonds triés¹ |
+| Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
+| PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
+| Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
+| Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
+| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon² |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
@@ -85,6 +73,29 @@ uv run pytest
 Un fichier de test par module de `tools/` (logique pure ; le matching BM Lyon est testé
 sans navigateur), plus `tests/test_pages.py` qui vérifie que **chaque page se rend sans
 exception** (smoke-test via `streamlit.testing.v1.AppTest`).
+
+## Structure du projet
+
+```text
+outils_maison/
+├── app.py              # entrée Streamlit (navigation multipage)
+├── tools/              # logique pure, sans Streamlit (testable)
+│   ├── ffmpeg_utils.py #   accès au binaire ffmpeg embarqué
+│   ├── audio.py        #   normalisation FLAC, extraction, renommage par tags
+│   ├── musique.py      #   regroupement de singles
+│   ├── images.py       #   redimensionner, convertir, dédupliquer, renuméroter
+│   ├── fonds.py        #   appariement fonds d'écran SIFT+RANSAC (extra vision)
+│   ├── video.py        #   fusionner, découper, compresser
+│   ├── pdf.py          #   extraire, fusionner, pages, images ↔ PDF
+│   ├── files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
+│   ├── data.py         #   conversions CSV / Excel / JSON
+│   ├── biblio.py       #   tri de cotes de bibliothèque
+│   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (extra scraping)
+├── pages/              # une page Streamlit par outil
+├── tests/              # tests pytest (logique + rendu des pages)
+├── notebooks_archive/  # notebooks d'origine, conservés en référence
+└── docs/               # cadrage et architecture
+```
 
 ## Documentation
 

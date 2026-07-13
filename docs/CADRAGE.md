@@ -72,7 +72,7 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 
 ## 6. Décisions
 
-**Figées ✅**
+**Décisions figées**
 - Séparer la logique (`tools/`) de l'UI (`pages/`) : logique testable sans Streamlit.
 - ffmpeg embarqué (`imageio-ffmpeg`) plutôt que ffmpeg système.
 - Dépendances lourdes en extras (`vision`, `scraping`) avec imports paresseux.
@@ -82,7 +82,7 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 (Justifications contrastives détaillées en
 [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).)
 
-**À trancher 🔲**
+**À trancher**
 - Fixer `imageio-ffmpeg` en dépendance directe (aujourd'hui transitif). `<à confirmer>`
 - Corriger la mention « torch + opencv ~2-3 Go » de `pages/accueil.py` (l'extra `vision`
   n'installe qu'OpenCV, ~60 Mo). `<à confirmer>`
