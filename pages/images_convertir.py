@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.images import convertir, lister_images
+from ui import champ_dossier
 
 st.title("🔄 Convertir des images")
 st.caption("Convertit un lot d'images vers un autre format. Gère le HEIC (photos iPhone) en entrée.")
 
-dossier = st.text_input("Dossier des images", placeholder="C:/Users/.../photos")
+dossier = champ_dossier(
+    "Dossier des images", "images_convertir_dossier", placeholder="C:/Users/.../photos"
+)
 col1, col2 = st.columns(2)
 format_sortie = col1.selectbox("Format de sortie", ["jpg", "png", "webp"], index=0)
 qualite = col2.slider("Qualité (jpg/webp)", 50, 100, 90)

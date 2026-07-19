@@ -3,12 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.audio import CODECS_AUDIO, EXT_VIDEO, extraire_audio
+from ui import champ_mixte
 
 st.title("🎵 Extraire l'audio d'une vidéo")
 st.caption("Récupère la piste audio d'une (ou plusieurs) vidéo dans le format de ton choix.")
 
-dossier_ou_fichier = st.text_input(
+dossier_ou_fichier = champ_mixte(
     "Chemin d'une vidéo ou d'un dossier de vidéos",
+    "audio_extraire_chemin",
     placeholder="C:/Users/.../clip.mp4",
 )
 format_sortie = st.selectbox("Format de sortie", list(CODECS_AUDIO), index=0)

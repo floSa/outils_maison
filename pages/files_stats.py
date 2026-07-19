@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from tools.files import statistiques
+from ui import champ_dossier
 
 
 def _human(n: int) -> str:
@@ -17,7 +18,9 @@ def _human(n: int) -> str:
 st.title("📊 Statistiques d'un dossier")
 st.caption("Volume par catégorie, plus gros fichiers, dossiers vides.")
 
-dossier = st.text_input("Dossier à analyser", placeholder="M:/musiques")
+dossier = champ_dossier(
+    "Dossier à analyser", "files_stats_dossier", placeholder="M:/musiques"
+)
 recursif = st.checkbox("Inclure les sous-dossiers", value=True)
 
 if not dossier:

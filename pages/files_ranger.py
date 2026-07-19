@@ -4,11 +4,14 @@ import pandas as pd
 import streamlit as st
 
 from tools.files import NOM_JOURNAL, annuler, appliquer, previsualiser_rangement
+from ui import champ_dossier
 
 st.title("🗂️ Ranger automatiquement")
 st.caption("Déplace les fichiers d'un dossier dans des sous-dossiers par type ou par date.")
 
-dossier = st.text_input("Dossier à ranger", placeholder="C:/Users/.../Telechargements")
+dossier = champ_dossier(
+    "Dossier à ranger", "files_ranger_dossier", placeholder="C:/Users/.../Telechargements"
+)
 mode = st.radio("Critère", ["type", "date"], horizontal=True,
                 format_func=lambda m: "Par type" if m == "type" else "Par date (année/mois)")
 

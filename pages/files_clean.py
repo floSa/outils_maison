@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from tools.files import NOM_JOURNAL, annuler, appliquer, previsualiser
+from ui import champ_dossier
 
 st.title("🧹 Nettoyer les noms de fichiers")
 st.caption(
@@ -11,7 +12,9 @@ st.caption(
     "met en minuscules. Réversible via un journal d'annulation."
 )
 
-dossier = st.text_input("Dossier à traiter", placeholder="C:/Users/.../images")
+dossier = champ_dossier(
+    "Dossier à traiter", "files_clean_dossier", placeholder="C:/Users/.../images"
+)
 
 col1, col2 = st.columns(2)
 with col1:

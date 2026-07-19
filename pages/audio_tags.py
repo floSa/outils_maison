@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.audio import editer_tags
+from ui import champ_dossier
 
 st.title("🏷️ Éditer les tags en masse")
 st.caption("Applique des métadonnées communes à tous les fichiers audio d'un dossier.")
 
-dossier = st.text_input("Dossier audio", placeholder="M:/musiques/album")
+dossier = champ_dossier(
+    "Dossier audio", "audio_tags_dossier", placeholder="M:/musiques/album"
+)
 recursif = st.checkbox("Inclure les sous-dossiers", value=False)
 
 st.markdown("#### Champs à appliquer (laisser vide pour ne pas toucher)")

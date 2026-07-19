@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.pdf import compresser
+from ui import FILETYPES_PDF, champ_fichier
 
 st.title("🗜️ Compresser un PDF")
 st.caption("Réduit le poids d'un PDF (déflation des flux, nettoyage des objets inutiles).")
 
-chemin = st.text_input("Chemin du PDF", placeholder="C:/Users/.../document.pdf")
+chemin = champ_fichier(
+    "Chemin du PDF",
+    "pdf_compresser_chemin",
+    filetypes=FILETYPES_PDF,
+    placeholder="C:/Users/.../document.pdf",
+)
 
 if not chemin:
     st.stop()

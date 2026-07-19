@@ -3,6 +3,7 @@ from pathlib import Path
 import streamlit as st
 
 from tools.data import traiter_lignes
+from ui import FILETYPES_TEXTE, champ_fichier
 
 st.title("📃 Nettoyer des lignes de texte")
 st.caption("Déduplique, trie et retire les lignes vides d'un texte ou d'un fichier.")
@@ -13,7 +14,12 @@ chemin = None
 if source == "Coller du texte":
     texte = st.text_area("Lignes", height=200, placeholder="une ligne\nune autre\nune ligne")
 else:
-    chemin = st.text_input("Fichier texte", placeholder="C:/Users/.../liste.txt")
+    chemin = champ_fichier(
+        "Fichier texte",
+        "data_lignes_chemin",
+        filetypes=FILETYPES_TEXTE,
+        placeholder="C:/Users/.../liste.txt",
+    )
     if chemin and Path(chemin).is_file():
         texte = Path(chemin).read_text(encoding="utf-8")
     elif chemin:

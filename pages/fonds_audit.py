@@ -20,8 +20,10 @@ except ModuleNotFoundError:
     )
     st.stop()
 
+from ui import champ_dossier
+
 DEFAUT = "C:/Users/FLORIAN/Pictures/FDE/Fonds_Tries"
-dossier = st.text_input("Dossier trié", value=DEFAUT)
+dossier = champ_dossier("Dossier trié", "fonds_audit_dossier", valeur_defaut=DEFAUT)
 seuil = st.slider(
     "Seuil « suspect » (score propre en dessous duquel on vérifie en profondeur)",
     10, 80, fonds.SEUIL_INLIERS,

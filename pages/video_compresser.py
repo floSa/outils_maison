@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.video import compresser
+from ui import FILETYPES_VIDEO, champ_fichier
 
 st.title("🗜️ Compresser une vidéo")
 st.caption("Ré-encode en H.264 pour réduire le poids, avec redimensionnement optionnel.")
 
-video = st.text_input("Chemin de la vidéo", placeholder="C:/Users/.../film.mov")
+video = champ_fichier(
+    "Chemin de la vidéo",
+    "video_compresser_video",
+    filetypes=FILETYPES_VIDEO,
+    placeholder="C:/Users/.../film.mov",
+)
 
 col1, col2 = st.columns(2)
 crf = col1.slider("Qualité (CRF — bas = meilleure qualité)", 18, 32, 23)

@@ -4,12 +4,16 @@ import pandas as pd
 import streamlit as st
 
 from tools.pdf import Segment, compter_pages, extraire_segments
+from ui import FILETYPES_PDF, champ_dossier, champ_fichier
 
 st.title("✂️ Extraire des pages d'un PDF")
 st.caption("Découpe un PDF source en plusieurs documents selon des plages de pages.")
 
-pdf_path = st.text_input(
-    "Chemin du PDF source", placeholder="C:/Users/.../document.pdf"
+pdf_path = champ_fichier(
+    "Chemin du PDF source",
+    "pdf_extract_source",
+    filetypes=FILETYPES_PDF,
+    placeholder="C:/Users/.../document.pdf",
 )
 
 if not pdf_path:
@@ -45,8 +49,8 @@ table = st.data_editor(
     },
 )
 
-dossier_sortie = st.text_input(
-    "Dossier de sortie (vide = dossier du PDF source)", value=""
+dossier_sortie = champ_dossier(
+    "Dossier de sortie (vide = dossier du PDF source)", "pdf_extract_dossier_sortie"
 )
 
 if st.button("Extraire", type="primary"):

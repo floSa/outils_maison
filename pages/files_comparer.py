@@ -3,13 +3,13 @@ from pathlib import Path
 import streamlit as st
 
 from tools.files import comparer_dossiers
+from ui import champ_dossier
 
 st.title("🔀 Comparer deux dossiers")
 st.caption("Liste ce qui diffère entre deux arborescences (par chemin relatif).")
 
-col1, col2 = st.columns(2)
-dossier_a = col1.text_input("Dossier A", placeholder="C:/.../original")
-dossier_b = col2.text_input("Dossier B", placeholder="C:/.../copie")
+dossier_a = champ_dossier("Dossier A", "files_comparer_dossier_a", placeholder="C:/.../original")
+dossier_b = champ_dossier("Dossier B", "files_comparer_dossier_b", placeholder="C:/.../copie")
 par_hash = st.checkbox("Comparer le contenu (SHA-1, plus lent)", value=False)
 
 if not dossier_a or not dossier_b:

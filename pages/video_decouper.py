@@ -4,11 +4,17 @@ import streamlit as st
 
 from tools.ffmpeg_utils import duree_secondes
 from tools.video import decouper
+from ui import FILETYPES_VIDEO, champ_fichier
 
 st.title("✂️ Découper une vidéo")
 st.caption("Extrait un passage d'une vidéo, sans ré-encodage (rapide, sans perte).")
 
-video = st.text_input("Chemin de la vidéo", placeholder="C:/Users/.../film.mp4")
+video = champ_fichier(
+    "Chemin de la vidéo",
+    "video_decouper_video",
+    filetypes=FILETYPES_VIDEO,
+    placeholder="C:/Users/.../film.mp4",
+)
 
 if not video:
     st.stop()

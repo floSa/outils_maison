@@ -3,6 +3,7 @@ from pathlib import Path
 import streamlit as st
 
 from tools import fonds
+from ui import champ_dossier
 
 st.title("🧹 Dédupliquer les fonds triés")
 st.caption(
@@ -11,7 +12,7 @@ st.caption(
 )
 
 DEFAUT = "C:/Users/FLORIAN/Pictures/FDE/Fonds_Tries"
-dossier = st.text_input("Dossier trié", value=DEFAUT)
+dossier = champ_dossier("Dossier trié", "fonds_dedup_dossier", valeur_defaut=DEFAUT)
 base = Path(dossier)
 
 suspects_data = fonds.charger_audit(base) if base.is_dir() else None

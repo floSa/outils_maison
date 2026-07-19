@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.video import convertir
+from ui import FILETYPES_VIDEO, champ_fichier
 
 st.title("🔄 Convertir une vidéo")
 st.caption("Ré-encode une vidéo vers un autre conteneur (mp4, mkv, webm…) en H.264/AAC.")
 
-chemin = st.text_input("Chemin de la vidéo", placeholder="C:/Users/.../film.mkv")
+chemin = champ_fichier(
+    "Chemin de la vidéo",
+    "video_convertir_chemin",
+    filetypes=FILETYPES_VIDEO,
+    placeholder="C:/Users/.../film.mkv",
+)
 format_sortie = st.selectbox("Format de sortie", ["mp4", "mkv", "webm", "mov"], index=0)
 
 if not chemin:

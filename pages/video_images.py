@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.video import extraire_images
+from ui import FILETYPES_VIDEO, champ_fichier
 
 st.title("🖼️ Extraire des images d'une vidéo")
 st.caption("Capture une image à intervalle régulier (ex. 1 image toutes les N secondes).")
 
-chemin = st.text_input("Chemin de la vidéo", placeholder="C:/Users/.../film.mp4")
+chemin = champ_fichier(
+    "Chemin de la vidéo",
+    "video_images_chemin",
+    filetypes=FILETYPES_VIDEO,
+    placeholder="C:/Users/.../film.mp4",
+)
 col1, col2 = st.columns(2)
 intervalle = col1.number_input("Intervalle (secondes)", min_value=0.1, value=1.0, step=0.5)
 fmt = col2.selectbox("Format des images", ["png", "jpg"], index=0)

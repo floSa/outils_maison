@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.files import trouver_doublons_fichiers
+from ui import champ_dossier
 
 st.title("🧬 Trouver les fichiers en double")
 st.caption("Détecte les fichiers strictement identiques (même contenu) par empreinte SHA-1.")
 
-dossier = st.text_input("Dossier à analyser", placeholder="C:/Users/.../dossier")
+dossier = champ_dossier(
+    "Dossier à analyser", "files_doublons_dossier", placeholder="C:/Users/.../dossier"
+)
 recursif = st.checkbox("Inclure les sous-dossiers", value=True)
 
 if not dossier:

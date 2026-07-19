@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.video import fusionner_videos, lister_videos
+from ui import champ_dossier
 
 st.title("🎬 Fusionner des vidéos")
 st.caption("Concatène tous les clips d'un dossier, dans l'ordre alphabétique.")
 
-dossier = st.text_input("Dossier des vidéos", placeholder="C:/Users/.../clips")
+dossier = champ_dossier(
+    "Dossier des vidéos", "video_merge_dossier", placeholder="C:/Users/.../clips"
+)
 motif = st.text_input("Motif de fichiers", value="*.mp4")
 
 if not dossier:

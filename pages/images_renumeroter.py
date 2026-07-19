@@ -8,11 +8,14 @@ from tools.images import (
     lister_images,
     previsualiser_renumerotation,
 )
+from ui import champ_dossier
 
 st.title("🔢 Renuméroter des images")
 st.caption("Renomme des pages/images en séquence selon un tri naturel (page2 avant page10).")
 
-dossier = st.text_input("Dossier des images", placeholder="C:/Users/.../scans")
+dossier = champ_dossier(
+    "Dossier des images", "images_renumeroter_dossier", placeholder="C:/Users/.../scans"
+)
 
 col1, col2, col3 = st.columns(3)
 prefixe = col1.text_input("Préfixe", value="page")
@@ -22,7 +25,7 @@ largeur = col3.number_input("Chiffres (zéros à gauche)", value=3, min_value=1,
 col4, col5 = st.columns(2)
 inverse = col4.checkbox("Ordre inversé", value=False)
 copier = col5.checkbox("Copier (préserver les originaux)", value=True)
-sortie = st.text_input("Dossier de sortie (vide = même dossier)", value="")
+sortie = champ_dossier("Dossier de sortie (vide = même dossier)", "images_renumeroter_sortie")
 
 if not dossier:
     st.stop()

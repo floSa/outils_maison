@@ -4,6 +4,7 @@ import streamlit as st
 
 from tools.images import lister_images, tri_naturel
 from tools.pdf import images_vers_pdf, pdf_vers_images
+from ui import FILETYPES_PDF, champ_dossier, champ_fichier
 
 st.title("🖼️ Images ↔ PDF")
 st.caption("Assemble des images en PDF, ou exporte les pages d'un PDF en images.")
@@ -11,7 +12,9 @@ st.caption("Assemble des images en PDF, ou exporte les pages d'un PDF en images.
 sens = st.radio("Sens de conversion", ["Images → PDF", "PDF → Images"], horizontal=True)
 
 if sens == "Images → PDF":
-    dossier = st.text_input("Dossier des images", placeholder="C:/Users/.../scans")
+    dossier = champ_dossier(
+        "Dossier des images", "pdf_images_dossier", placeholder="C:/Users/.../scans"
+    )
     nom_sortie = st.text_input("Nom du PDF", value="document.pdf")
     if not dossier:
         st.stop()
@@ -29,7 +32,12 @@ if sens == "Images → PDF":
             st.error(str(e))
 
 else:
-    pdf = st.text_input("Chemin du PDF", placeholder="C:/Users/.../document.pdf")
+    pdf = champ_fichier(
+        "Chemin du PDF",
+        "pdf_images_pdf",
+        filetypes=FILETYPES_PDF,
+        placeholder="C:/Users/.../document.pdf",
+    )
     col1, col2 = st.columns(2)
     dpi = col1.slider("Résolution (DPI)", 72, 300, 150)
     fmt = col2.selectbox("Format des images", ["png", "jpg"], index=0)

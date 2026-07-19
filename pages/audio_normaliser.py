@@ -3,13 +3,16 @@ from pathlib import Path
 import streamlit as st
 
 from tools.audio import normaliser_dossier
+from ui import champ_dossier
 
 st.title("🎚️ Normaliser des FLAC")
 st.caption("Ré-encode les FLAC haute résolution en 16 bit / 44.1 kHz, tags préservés.")
 
 st.warning("Les fichiers sont modifiés **sur place**. Fais une sauvegarde si besoin.", icon="⚠️")
 
-dossier = st.text_input("Dossier des FLAC", placeholder="M:/musiques/album")
+dossier = champ_dossier(
+    "Dossier des FLAC", "audio_normaliser_dossier", placeholder="M:/musiques/album"
+)
 recursif = st.checkbox("Inclure les sous-dossiers", value=True)
 
 col1, col2 = st.columns(2)

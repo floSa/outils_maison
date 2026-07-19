@@ -5,11 +5,14 @@ import streamlit as st
 
 from tools.audio import previsualiser_renommage_tags
 from tools.files import NOM_JOURNAL, annuler, appliquer
+from ui import champ_dossier
 
 st.title("🏷️ Renommer l'audio depuis les tags")
 st.caption("Construit les noms de fichiers à partir des métadonnées (artiste, titre, piste…).")
 
-dossier = st.text_input("Dossier audio", placeholder="M:/musiques/album")
+dossier = champ_dossier(
+    "Dossier audio", "audio_renommer_dossier", placeholder="M:/musiques/album"
+)
 motif = st.text_input(
     "Motif du nom",
     value="{piste} - {artiste} - {titre}",

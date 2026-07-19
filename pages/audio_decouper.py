@@ -4,11 +4,17 @@ import streamlit as st
 
 from tools.audio import decouper_audio
 from tools.ffmpeg_utils import duree_secondes
+from ui import FILETYPES_AUDIO, champ_fichier
 
 st.title("✂️ Découper un audio")
 st.caption("Extrait un passage d'un fichier audio (sans ré-encodage).")
 
-chemin = st.text_input("Fichier audio", placeholder="C:/Users/.../piste.flac")
+chemin = champ_fichier(
+    "Fichier audio",
+    "audio_decouper_chemin",
+    filetypes=FILETYPES_AUDIO,
+    placeholder="C:/Users/.../piste.flac",
+)
 
 if not chemin:
     st.stop()

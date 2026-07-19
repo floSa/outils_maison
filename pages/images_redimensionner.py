@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.images import lister_images, redimensionner
+from ui import champ_dossier
 
 st.title("📐 Redimensionner / compresser des images")
 st.caption("Réduit la taille d'un lot d'images (ratio conservé) et les compresse.")
 
-dossier = st.text_input("Dossier des images", placeholder="C:/Users/.../photos")
+dossier = champ_dossier(
+    "Dossier des images", "images_redimensionner_dossier", placeholder="C:/Users/.../photos"
+)
 col1, col2, col3 = st.columns(3)
 largeur_max = col1.number_input("Largeur max (px, 0 = auto)", value=1920, step=100)
 hauteur_max = col2.number_input("Hauteur max (px, 0 = auto)", value=0, step=100)

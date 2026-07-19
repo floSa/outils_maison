@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.pdf import extraire_texte
+from ui import FILETYPES_PDF, champ_fichier
 
 st.title("📝 Extraire le texte d'un PDF")
 st.caption("Récupère le texte intégré d'un PDF vers un fichier .txt (sans OCR).")
 
-chemin = st.text_input("Chemin du PDF", placeholder="C:/Users/.../document.pdf")
+chemin = champ_fichier(
+    "Chemin du PDF",
+    "pdf_texte_chemin",
+    filetypes=FILETYPES_PDF,
+    placeholder="C:/Users/.../document.pdf",
+)
 
 if not chemin:
     st.stop()

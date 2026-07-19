@@ -4,12 +4,20 @@ import pandas as pd
 import streamlit as st
 
 from tools.files import NOM_JOURNAL, annuler, appliquer, previsualiser_renommage_csv
+from ui import FILETYPES_CSV, champ_dossier, champ_fichier
 
 st.title("📋 Renommer depuis un CSV")
 st.caption("Renomme des fichiers selon une table de correspondances (colonnes ancien → nouveau).")
 
-dossier = st.text_input("Dossier des fichiers", placeholder="C:/Users/.../fichiers")
-csv_path = st.text_input("Fichier CSV de correspondances", placeholder="C:/Users/.../mapping.csv")
+dossier = champ_dossier(
+    "Dossier des fichiers", "files_csv_dossier", placeholder="C:/Users/.../fichiers"
+)
+csv_path = champ_fichier(
+    "Fichier CSV de correspondances",
+    "files_csv_mapping",
+    filetypes=FILETYPES_CSV,
+    placeholder="C:/Users/.../mapping.csv",
+)
 col1, col2 = st.columns(2)
 col_ancien = col1.text_input("Colonne 'ancien nom'", value="ancien")
 col_nouveau = col2.text_input("Colonne 'nouveau nom'", value="nouveau")

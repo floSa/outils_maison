@@ -4,11 +4,14 @@ import pandas as pd
 import streamlit as st
 
 from tools.files import NOM_JOURNAL, annuler, appliquer, previsualiser_remplacement
+from ui import champ_dossier
 
 st.title("🔁 Renommer en masse (chercher / remplacer)")
 st.caption("Remplace un motif dans les noms de fichiers — texte simple ou expression régulière.")
 
-dossier = st.text_input("Dossier", placeholder="C:/Users/.../fichiers")
+dossier = champ_dossier(
+    "Dossier", "files_remplacer_dossier", placeholder="C:/Users/.../fichiers"
+)
 col1, col2 = st.columns(2)
 chercher = col1.text_input("Chercher")
 remplacer = col2.text_input("Remplacer par")

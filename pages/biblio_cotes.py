@@ -3,6 +3,7 @@ from pathlib import Path
 import streamlit as st
 
 from tools.biblio import formater, parser_lignes, trier_par_cote
+from ui import FILETYPES_TEXTE, champ_fichier
 
 st.title("📇 Trier des cotes de bibliothèque")
 st.caption("Trie des entrées « Artiste - Album - Cote » par cote (type Dewey musique).")
@@ -17,7 +18,12 @@ if source == "Coller du texte":
         placeholder="Cliff Martinez - The Knick - 786.1 KNI 3\nDanny Elfman - Alice - 786 B.O",
     )
 else:
-    chemin = st.text_input("Fichier texte", placeholder="C:/Users/.../cotes_bibli.txt")
+    chemin = champ_fichier(
+        "Fichier texte",
+        "biblio_cotes_chemin",
+        filetypes=FILETYPES_TEXTE,
+        placeholder="C:/Users/.../cotes_bibli.txt",
+    )
     if chemin and Path(chemin).is_file():
         texte = Path(chemin).read_text(encoding="utf-8")
     elif chemin:

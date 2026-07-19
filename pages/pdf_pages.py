@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.pdf import compter_pages, pivoter_pages, supprimer_pages
+from ui import FILETYPES_PDF, champ_fichier
 
 st.title("🔧 Manipuler les pages d'un PDF")
 st.caption("Supprime ou pivote des pages d'un PDF.")
 
-pdf = st.text_input("Chemin du PDF", placeholder="C:/Users/.../document.pdf")
+pdf = champ_fichier(
+    "Chemin du PDF",
+    "pdf_pages_pdf",
+    filetypes=FILETYPES_PDF,
+    placeholder="C:/Users/.../document.pdf",
+)
 
 if not pdf:
     st.stop()

@@ -21,11 +21,17 @@ except ModuleNotFoundError:
     )
     st.stop()
 
+from ui import champ_dossier
+
 DEFAUT_SRC = "C:/Users/FLORIAN/Pictures/FDE"
 DEFAUT_TRIES = "C:/Users/FLORIAN/Pictures/FDE/Fonds_Tries"
 
-source = st.text_input("Dossier source (images en vrac)", value=DEFAUT_SRC)
-dossier_tries = st.text_input("Dossier trié (destination)", value=DEFAUT_TRIES)
+source = champ_dossier(
+    "Dossier source (images en vrac)", "fonds_ecran_source", valeur_defaut=DEFAUT_SRC
+)
+dossier_tries = champ_dossier(
+    "Dossier trié (destination)", "fonds_ecran_dossier_tries", valeur_defaut=DEFAUT_TRIES
+)
 col1, col2 = st.columns(2)
 seuil = col1.slider("Seuil d'inliers minimum", 10, 100, fonds.SEUIL_INLIERS)
 verifier_dup = col2.checkbox("Vérifier les couples déjà triés", value=True)

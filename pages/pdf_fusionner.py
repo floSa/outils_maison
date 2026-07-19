@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.pdf import fusionner
+from ui import champ_dossier
 
 st.title("📚 Fusionner des PDF")
 st.caption("Concatène plusieurs PDF en un seul, dans l'ordre choisi.")
 
-dossier = st.text_input("Dossier contenant les PDF", placeholder="C:/Users/.../docs")
+dossier = champ_dossier(
+    "Dossier contenant les PDF", "pdf_fusionner_dossier", placeholder="C:/Users/.../docs"
+)
 
 if not dossier:
     st.stop()

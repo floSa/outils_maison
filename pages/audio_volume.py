@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.audio import EXT_AUDIO, normaliser_volume
+from ui import champ_mixte
 
 st.title("🔊 Normaliser le volume")
 st.caption("Égalise le volume perçu (norme EBU R128 / loudnorm) vers une cible commune.")
 
-chemin = st.text_input("Fichier audio ou dossier", placeholder="M:/musiques/album")
+chemin = champ_mixte(
+    "Fichier audio ou dossier", "audio_volume_chemin", placeholder="M:/musiques/album"
+)
 cible_lufs = st.slider(
     "Cible (LUFS)", -24.0, -9.0, -14.0, 0.5,
     help="-14 LUFS ≈ standard streaming. Plus bas = plus fort.",

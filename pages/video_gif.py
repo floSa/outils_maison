@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.video import creer_gif
+from ui import FILETYPES_VIDEO, champ_fichier
 
 st.title("🎞️ Créer un GIF")
 st.caption("Convertit un court extrait de vidéo en GIF animé (palette optimisée).")
 
-chemin = st.text_input("Chemin de la vidéo", placeholder="C:/Users/.../clip.mp4")
+chemin = champ_fichier(
+    "Chemin de la vidéo",
+    "video_gif_chemin",
+    filetypes=FILETYPES_VIDEO,
+    placeholder="C:/Users/.../clip.mp4",
+)
 col1, col2, col3 = st.columns(3)
 debut = col1.text_input("Début (HH:MM:SS)", value="00:00:00")
 duree = col2.number_input("Durée (s)", min_value=0.5, value=3.0, step=0.5)

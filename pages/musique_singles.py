@@ -11,6 +11,7 @@ from tools.musique import (
     appliquer,
     previsualiser,
 )
+from ui import champ_dossier
 
 st.title("🎼 Regrouper les singles")
 st.caption(
@@ -18,7 +19,9 @@ st.caption(
     "à un seul titre dans un dossier `Singles/` par artiste, puis supprime le dossier vidé."
 )
 
-racine = st.text_input("Dossier racine de la bibliothèque", placeholder="M:/musiques")
+racine = champ_dossier(
+    "Dossier racine de la bibliothèque", "musique_singles_racine", placeholder="M:/musiques"
+)
 
 if st.button("Analyser", type="primary"):
     base = Path(racine)

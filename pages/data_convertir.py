@@ -3,11 +3,17 @@ from pathlib import Path
 import streamlit as st
 
 from tools.data import FORMATS, convertir_tableau
+from ui import FILETYPES_TABLEAU, champ_fichier
 
 st.title("🔀 Convertir un tableau (CSV ↔ Excel ↔ JSON)")
 st.caption("Convertit un fichier tabulaire d'un format à un autre.")
 
-fichier = st.text_input("Fichier source", placeholder="C:/Users/.../donnees.csv")
+fichier = champ_fichier(
+    "Fichier source",
+    "data_convertir_fichier",
+    filetypes=FILETYPES_TABLEAU,
+    placeholder="C:/Users/.../donnees.csv",
+)
 format_sortie = st.selectbox("Format de sortie", FORMATS, index=1)
 
 if not fichier:

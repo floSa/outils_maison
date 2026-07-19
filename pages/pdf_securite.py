@@ -3,12 +3,18 @@ from pathlib import Path
 import streamlit as st
 
 from tools.pdf import deproteger, proteger
+from ui import FILETYPES_PDF, champ_fichier
 
 st.title("🔒 Protéger / déprotéger un PDF")
 st.caption("Ajoute ou retire un mot de passe sur un PDF.")
 
 action = st.radio("Action", ["Protéger", "Déprotéger"], horizontal=True)
-chemin = st.text_input("Chemin du PDF", placeholder="C:/Users/.../document.pdf")
+chemin = champ_fichier(
+    "Chemin du PDF",
+    "pdf_securite_chemin",
+    filetypes=FILETYPES_PDF,
+    placeholder="C:/Users/.../document.pdf",
+)
 mot_de_passe = st.text_input("Mot de passe", type="password")
 
 if not chemin:

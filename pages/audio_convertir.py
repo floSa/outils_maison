@@ -3,11 +3,14 @@ from pathlib import Path
 import streamlit as st
 
 from tools.audio import CODECS_AUDIO, EXT_AUDIO, convertir_audio
+from ui import champ_mixte
 
 st.title("🎚️ Convertir un format audio")
 st.caption("Convertit un fichier (ou tout un dossier) vers un autre format audio.")
 
-chemin = st.text_input("Fichier audio ou dossier", placeholder="M:/musiques/album")
+chemin = champ_mixte(
+    "Fichier audio ou dossier", "audio_convertir_chemin", placeholder="M:/musiques/album"
+)
 col1, col2 = st.columns(2)
 format_sortie = col1.selectbox("Format de sortie", list(CODECS_AUDIO), index=1)
 bitrate = col2.text_input("Bitrate (mp3/m4a, ex. 320k — vide = défaut)", value="")
