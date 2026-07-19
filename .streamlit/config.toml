@@ -1,0 +1,6 @@
+[client]
+# La navigation est construite à la main dans app.py (menus repliables par
+# catégorie). Sans cette option, Streamlit affiche en plus sa navigation
+# automatique déduite du dossier `pages/` — visible notamment tant que le
+# script n'a pas fini de s'exécuter, avant que st.navigation prenne le relais.
+showSidebarNavigation = false

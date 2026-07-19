@@ -40,6 +40,10 @@ FILETYPES_TABLEAU = [
 _MOTIF_CHEMIN_WINDOWS = re.compile(r"^[A-Za-z]:[\\/]")
 
 
+class ErreurDialogue(RuntimeError):
+    """Le dialogue de sélection n'a pas pu s'ouvrir (cause affichée à l'écran)."""
+
+
 # --------------------------------------------------------------------------- #
 # Détection de l'environnement et conversion des chemins
 # --------------------------------------------------------------------------- #
@@ -190,8 +194,15 @@ public static class SelecteurDossier
 '@
 """
 
-# Petite fenêtre invisible servant de propriétaire : sans elle, le dialogue
-# s'ouvre parfois derrière la fenêtre du navigateur.
+# Fenêtre propriétaire, invisible mais centrée à l'écran : le dialogue se
+# centre sur elle, et comme elle est « TopMost » il s'ouvre devant le
+# navigateur au lieu de rester caché derrière. Placée hors écran, Windows
+# rabattait le dialogue dans le coin supérieur gauche, sous le navigateur.
+#
+# Uniquement des API .NET managées ici : les appels Win32 du type
+# SetForegroundWindow via Add-Type sont une signature classique de maliciel et
+# se font bloquer par l'antivirus (AMSI), ce qui empêcherait tout le dialogue
+# de s'ouvrir.
 _FENETRE_AVANT_PLAN = r"""
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -200,9 +211,11 @@ $avantPlan.TopMost = $true
 $avantPlan.ShowInTaskbar = $false
 $avantPlan.FormBorderStyle = 'None'
 $avantPlan.Size = New-Object System.Drawing.Size(1, 1)
-$avantPlan.StartPosition = 'Manual'
-$avantPlan.Location = New-Object System.Drawing.Point(-4000, -4000)
+$avantPlan.Opacity = 0
+$avantPlan.StartPosition = 'CenterScreen'
 $avantPlan.Show()
+$avantPlan.Activate()
+$avantPlan.BringToFront()
 """
 
 
@@ -247,9 +260,25 @@ def _executer_powershell(script: str) -> str:
             capture_output=True,
             timeout=300,
         )
-    except (OSError, subprocess.SubprocessError):
-        return ""
+    except subprocess.TimeoutExpired:
+        raise ErreurDialogue(
+            "Le dialogue est resté ouvert plus de 5 minutes sans réponse. "
+            "S'il est masqué derrière une autre fenêtre, ferme-le puis réessaie."
+        ) from None
+    except (OSError, subprocess.SubprocessError) as e:
+        raise ErreurDialogue(f"Impossible de lancer PowerShell : {e}") from e
+
     sortie = resultat.stdout.decode("utf-8", errors="replace").strip()
+    if resultat.returncode != 0:
+        erreur = resultat.stderr.decode("cp1252", errors="replace")
+        if "ScriptContainedMaliciousContent" in erreur:
+            raise ErreurDialogue(
+                "L'antivirus a bloqué l'ouverture du dialogue Windows "
+                "(AMSI, « contenu malveillant »). Le chemin peut être saisi "
+                "manuellement, ou l'antivirus configuré pour autoriser ce script."
+            )
+        raise ErreurDialogue(f"PowerShell a échoué (code {resultat.returncode}).")
+
     return sortie.splitlines()[-1].strip() if sortie else ""
 
 
@@ -371,8 +400,8 @@ def _tk(modele: str, **kwargs) -> str:
             errors="replace",
             timeout=300,
         )
-    except (OSError, subprocess.SubprocessError):
-        return ""
+    except (OSError, subprocess.SubprocessError) as e:
+        raise ErreurDialogue(f"Le dialogue n'a pas pu s'ouvrir : {e}") from e
     return resultat.stdout.strip()
 
 
@@ -421,6 +450,35 @@ def choisir_fichier_sortie(
 # --------------------------------------------------------------------------- #
 
 
+def _tenter(cle: str, ouvrir, valeur: str) -> None:
+    """Ouvre le dialogue et mémorise soit le chemin choisi, soit l'erreur."""
+    try:
+        choisi = ouvrir(valeur)
+    except ErreurDialogue as e:
+        st.session_state[f"{cle}__erreur"] = str(e)
+        return
+    st.session_state.pop(f"{cle}__erreur", None)
+    if choisi:
+        st.session_state[cle] = choisi
+        st.rerun()
+
+
+def _repli_manuel(cle: str, valeur: str) -> None:
+    """Si le dialogue a échoué, affiche l'erreur et permet de saisir le chemin."""
+    erreur = st.session_state.get(f"{cle}__erreur")
+    if not erreur:
+        return
+    st.error(erreur, icon="⚠️")
+    saisie = st.text_input(
+        "Chemin (saisie manuelle, le dialogue étant indisponible)",
+        value=valeur,
+        key=f"{cle}__manuel",
+    )
+    if saisie != valeur:
+        st.session_state[cle] = normaliser(saisie)
+        st.rerun()
+
+
 def _ligne(label: str, cle: str, texte_vide: str, aide: str | None, ouvrir) -> str:
     """Affiche « label + bouton Parcourir + chemin choisi » sur une ligne."""
     valeur = st.session_state.get(cle, "")
@@ -433,10 +491,7 @@ def _ligne(label: str, cle: str, texte_vide: str, aide: str | None, ouvrir) -> s
         if st.button(
             "📂 Parcourir", key=f"{cle}__parcourir", use_container_width=True, help=aide
         ):
-            choisi = ouvrir(valeur)
-            if choisi:
-                st.session_state[cle] = choisi
-                st.rerun()
+            _tenter(cle, ouvrir, valeur)
 
     with colonnes[1]:
         if valeur:
@@ -450,6 +505,7 @@ def _ligne(label: str, cle: str, texte_vide: str, aide: str | None, ouvrir) -> s
                 st.session_state[cle] = ""
                 st.rerun()
 
+    _repli_manuel(cle, valeur)
     return st.session_state.get(cle, "")
 
 
@@ -531,17 +587,11 @@ def champ_mixte(
         if st.button(
             "📁 Dossier", key=f"{cle}__dossier", use_container_width=True, help=aide
         ):
-            choisi = choisir_dossier(valeur, titre=label)
-            if choisi:
-                st.session_state[cle] = choisi
-                st.rerun()
+            _tenter(cle, lambda v: choisir_dossier(v, titre=label), valeur)
 
     with colonnes[1]:
         if st.button("📄 Fichier", key=f"{cle}__fichier", use_container_width=True):
-            choisi = choisir_fichier(valeur, titre=label)
-            if choisi:
-                st.session_state[cle] = choisi
-                st.rerun()
+            _tenter(cle, lambda v: choisir_fichier(v, titre=label), valeur)
 
     with colonnes[2]:
         if valeur:
@@ -555,4 +605,5 @@ def champ_mixte(
                 st.session_state[cle] = ""
                 st.rerun()
 
+    _repli_manuel(cle, valeur)
     return st.session_state.get(cle, "")
