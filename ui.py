@@ -78,11 +78,30 @@ def _convertir_chemin(chemin: str, vers: str) -> str:
     return resultat.stdout.strip() if resultat.returncode == 0 else chemin
 
 
+def _repli_mnt(chemin_windows: str) -> str:
+    """Repli manuel `X:\\a\\b` → `/mnt/x/a/b` quand `wslpath` échoue.
+
+    `wslpath` ne connaît pas les lecteurs réseau mappés (ex. M: → une part SMB) :
+    il renvoie une erreur et laisse le chemin Windows tel quel, inutilisable sous
+    Linux. On applique alors la convention d'auto-montage de WSL. Le dossier
+    `/mnt/<lettre>` doit exister (part réseau montée) pour que le chemin s'ouvre.
+    """
+    m = re.match(r"^([A-Za-z]):[\\/](.*)$", chemin_windows)
+    if not m:
+        return chemin_windows
+    lettre, reste = m.group(1).lower(), m.group(2).replace("\\", "/")
+    return f"/mnt/{lettre}/{reste}" if reste else f"/mnt/{lettre}"
+
+
 def normaliser(chemin: str) -> str:
     """Ramène un chemin Windows (`C:/...`) vers son équivalent WSL (`/mnt/c/...`)."""
     chemin = (chemin or "").strip()
     if chemin and _sous_wsl() and _MOTIF_CHEMIN_WINDOWS.match(chemin):
-        return _convertir_chemin(chemin.replace("/", "\\"), "-u")
+        converti = _convertir_chemin(chemin.replace("/", "\\"), "-u")
+        # wslpath a échoué (lecteur réseau non reconnu) → repli /mnt/<lettre>.
+        if _MOTIF_CHEMIN_WINDOWS.match(converti):
+            return _repli_mnt(chemin)
+        return converti
     return chemin
 
 

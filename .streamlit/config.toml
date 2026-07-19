@@ -4,3 +4,8 @@
 # automatique déduite du dossier `pages/` — visible notamment tant que le
 # script n'a pas fini de s'exécuter, avant que st.navigation prenne le relais.
 showSidebarNavigation = false
+
+# Masque le menu et les outils développeur (dont les raccourcis « R » = relancer
+# et « C » = vider les caches, avec leur pop-up). L'app est un outil, pas un
+# terrain de dev : on ne veut pas de ces boîtes de dialogue.
+toolbarMode = "minimal"
