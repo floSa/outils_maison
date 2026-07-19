@@ -11,21 +11,21 @@ from tools.clean_library import (
 )
 from ui import champ_dossier
 
-st.title("🧼 Nettoyer les noms d'une bibliothèque")
+st.title("🧼 Nettoyer la bibliothèque")
 st.caption(
     "Structure attendue : `Artiste / Album / Titres`. Deux règles : les suffixes "
-    "techniques des dossiers d'album (`(2018)`, `(Clean)`, `[UPC…]`, `{WEB}`…) sont "
-    "retirés, et les fichiers `01. Artiste - Titre` deviennent `01 - Titre`. "
+    "techniques des **dossiers d'album** (`(2018)`, `(Clean)`, `[UPC…]`, `{WEB}`…) sont "
+    "retirés, et les **fichiers** `01. Artiste - Titre` deviennent `01 - Titre`. "
     "Aucun tag n'est lu ; rien n'est modifié tant que tu n'as pas confirmé."
 )
 st.info(
-    "Le regroupement des « singles » (3ᵉ règle) est assuré par l'outil dédié "
+    "Le regroupement des « singles » est assuré par l'outil dédié "
     "**Regrouper les singles**.",
     icon="🎼",
 )
 
 racine = champ_dossier(
-    "Racine de la bibliothèque", "nettoyer_racine", placeholder="D:/Musique"
+    "Racine de la bibliothèque", "nettoyer_racine", valeur_defaut="M:/musiques/__autres"
 )
 
 if not racine:

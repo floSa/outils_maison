@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -175,6 +176,64 @@ def appliquer(plan: PlanNettoyage, racine: str | Path) -> Path:
     chemin = Path(racine) / NOM_JOURNAL_NETTOYAGE
     chemin.write_text(json.dumps(journal, ensure_ascii=False, indent=2), encoding="utf-8")
     return chemin
+
+
+def _normalise(valeur: str) -> str:
+    """Comparaison insensible à la casse et aux accents."""
+    return unicodedata.normalize("NFKD", valeur).casefold()
+
+
+def _titre_nu(stem: str) -> str:
+    """Isole le titre en retirant un éventuel préfixe de numéro de piste.
+
+    Reconnaît « 01. Artiste - Titre » (règle 2) comme « 01 - Titre » (déjà nettoyé).
+    """
+    m = _PISTE.match(stem)
+    if m:
+        reste = m.group(2)
+        return reste.split(" - ", 1)[1] if " - " in reste else reste
+    deja = re.match(r"^\s*\d{1,3}\s*-\s*(.+)$", stem)
+    return deja.group(1) if deja else stem
+
+
+@dataclass
+class TitreDouteux:
+    artiste: str
+    album: str
+    fichier: Path
+    raisons: list[str] = field(default_factory=list)
+
+
+def verifier_titres(racine: str | Path) -> list[TitreDouteux]:
+    """Audit **en lecture seule** : liste les fichiers dont le titre n'est pas « seul ».
+
+    Un titre est douteux s'il contient encore le nom de l'artiste ou de l'album, ou
+    s'il est resté au format « numéro. Artiste - Titre ». Ne modifie rien.
+    """
+    base = Path(racine)
+    if not base.is_dir():
+        raise NotADirectoryError(f"Dossier introuvable : {base}")
+
+    resultats: list[TitreDouteux] = []
+    for artiste in _sous_dossiers_visibles(base):
+        for album in _sous_dossiers_visibles(artiste):
+            for f in sorted(album.rglob("*")):
+                if not f.is_file() or f.suffix.lower() not in AUDIO_EXT:
+                    continue
+                titre = _normalise(_titre_nu(f.stem))
+                raisons: list[str] = []
+                if _normalise(artiste.name) in titre:
+                    raisons.append("contient l'artiste")
+                if _normalise(album.name) in titre:
+                    raisons.append("contient l'album")
+                m = _PISTE.match(f.stem)
+                if m and " - " in m.group(2):
+                    raisons.append("format « numéro. Artiste - Titre »")
+                if raisons:
+                    resultats.append(
+                        TitreDouteux(artiste.name, album.name, f, raisons=raisons)
+                    )
+    return resultats
 
 
 def annuler(racine: str | Path) -> int:

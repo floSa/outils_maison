@@ -13,33 +13,23 @@ from tools.catalogue import (
 )
 from ui import FILETYPES_CSV, champ_dossier, champ_fichier_sortie
 
-st.title("🎵 Cataloguer les albums")
+st.title("🎵 Catalogue de la bibliothèque")
 st.caption(
-    "Liste **tous les albums** d'une bibliothèque musicale (NAS) dans un CSV à deux "
-    "colonnes `artiste_ou_categorie;album`. Le dossier `__autres` est lu en 3 niveaux "
-    "(artiste → album) ; toute autre catégorie en 2 niveaux (album direct). "
-    "Lecture seule : rien n'est modifié sur la source."
+    "Liste **tous les albums** de la bibliothèque musicale (NAS) dans un CSV à deux "
+    "colonnes `artiste_ou_categorie;album`. Lecture seule : rien n'est modifié sur la source."
 )
 
 racine = champ_dossier(
     "Racine de la bibliothèque", "catalogue_racine", valeur_defaut="M:/musiques"
-)
-dossiers_artistes_txt = st.text_input(
-    "Dossiers lus en 3 niveaux (séparés par des virgules)",
-    value=", ".join(DOSSIERS_ARTISTES_DEFAUT),
-    help="Ces dossiers contiennent des artistes, puis des albums. Les autres catégories "
-    "contiennent directement des albums.",
 )
 
 if not racine:
     st.stop()
 
 base = Path(racine)
-dossiers_artistes = tuple(
-    d.strip() for d in dossiers_artistes_txt.split(",") if d.strip()
-) or DOSSIERS_ARTISTES_DEFAUT
+dossiers_artistes = DOSSIERS_ARTISTES_DEFAUT
 
-if st.button("Analyser", type="primary"):
+if st.button("Valider", type="primary"):
     with st.spinner("Parcours de la bibliothèque…"):
         try:
             st.session_state["catalogue"] = scanner(base, dossiers_artistes)

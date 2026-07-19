@@ -23,9 +23,6 @@ sections = {
         page("audio_volume.py", "Normaliser le volume", "🔊"),
         page("audio_renommer.py", "Renommer depuis les tags", "🏷️"),
         page("audio_tags.py", "Éditer les tags en masse", "🏷️"),
-        page("musique_singles.py", "Regrouper les singles", "🎼"),
-        page("musique_nettoyer.py", "Nettoyer les noms (biblio)", "🧼"),
-        page("musique_catalogue.py", "Cataloguer les albums", "🎵"),
     ],
     "🖼️ Images": [
         page("images_redimensionner.py", "Redimensionner / compresser", "📐"),
@@ -67,7 +64,13 @@ sections = {
         page("data_convertir.py", "Convertir un tableau", "🔀"),
         page("data_lignes.py", "Nettoyer des lignes", "📃"),
     ],
-    "📚 Biblio": [
+    "🎼 Bibliothèque perso": [
+        page("musique_catalogue.py", "Catalogue de la bibliothèque", "🎵"),
+        page("musique_nettoyer.py", "Nettoyer la bibliothèque", "🧼"),
+        page("musique_verifier.py", "Vérifier les titres", "🔍"),
+        page("musique_singles.py", "Regrouper les singles", "🎼"),
+    ],
+    "📚 Bibliothèque municipale": [
         page("biblio_cotes.py", "Trier des cotes", "📇"),
         page("biblio_dispo.py", "Vérifier la disponibilité BM Lyon", "📗"),
     ],

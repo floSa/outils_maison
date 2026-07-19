@@ -111,6 +111,23 @@ def test_annuler_restaure(tmp_path):
     assert (tmp_path / "Artiste" / "Album (2018) (Clean)" / "01. Artiste - Un.flac").is_file()
 
 
+def test_verifier_titres(tmp_path):
+    # Encore au format « num. Artiste - Titre ».
+    _f(tmp_path / "Chilla" / "Karma" / "01. Chilla - Sale caractère.flac")
+    # Titre propre au format mais contenant le nom de l'artiste.
+    _f(tmp_path / "Chilla" / "Karma" / "04 - Chilla en concert.flac")
+    # Titre contenant le nom de l'album.
+    _f(tmp_path / "Chilla" / "Karma" / "02 - Karma (intro).flac")
+    # Titre propre → non signalé.
+    _f(tmp_path / "Chilla" / "Karma" / "03 - Balance.flac")
+
+    douteux = {t.fichier.name: t.raisons for t in cl.verifier_titres(tmp_path)}
+    assert "format « numéro. Artiste - Titre »" in douteux["01. Chilla - Sale caractère.flac"]
+    assert "contient l'artiste" in douteux["04 - Chilla en concert.flac"]
+    assert "contient l'album" in douteux["02 - Karma (intro).flac"]
+    assert "03 - Balance.flac" not in douteux
+
+
 def test_pas_ecrasement_collision(tmp_path):
     # Deux dossiers qui se nettoient vers le même nom cible.
     _f(tmp_path / "Artiste" / "Album (2018)" / "01. A - X.flac")
