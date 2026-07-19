@@ -24,6 +24,8 @@ sections = {
         page("audio_renommer.py", "Renommer depuis les tags", "🏷️"),
         page("audio_tags.py", "Éditer les tags en masse", "🏷️"),
         page("musique_singles.py", "Regrouper les singles", "🎼"),
+        page("musique_nettoyer.py", "Nettoyer les noms (biblio)", "🧼"),
+        page("musique_catalogue.py", "Cataloguer les albums", "🎵"),
     ],
     "🖼️ Images": [
         page("images_redimensionner.py", "Redimensionner / compresser", "📐"),
