@@ -63,6 +63,15 @@ class Catalogue:
     def total_albums(self) -> int:
         return len(self.lignes)
 
+    def blocs(self) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+        """Sépare les lignes en (bloc artistes __Autres, bloc autres catégories).
+
+        Les lignes sont triées bloc artistes d'abord ; la frontière est le nombre
+        d'albums des dossiers « artistes ».
+        """
+        n = sum(s.nb_albums for s in self.stats if s.est_dossier_artistes)
+        return self.lignes[:n], self.lignes[n:]
+
 
 def _cle_tri(valeur: str) -> str:
     """Clé de tri insensible à la casse et aux accents (la valeur reste intacte)."""

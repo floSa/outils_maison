@@ -83,6 +83,17 @@ def test_autres_avant_les_categories(tmp_path):
     assert artistes_ordre == sorted(artistes_ordre, key=str.casefold)
 
 
+def test_blocs_separe_artistes_et_categories(tmp_path):
+    _biblio(tmp_path)
+    cat = catalogue.scanner(tmp_path)
+    autres, categories = cat.blocs()
+    # bloc « autres » = artistes (jamais la catégorie __MUZAK)
+    assert all(a != "__MUZAK" for a, _ in autres)
+    # bloc « catégories » = uniquement __MUZAK ici
+    assert all(a == "__MUZAK" for a, _ in categories)
+    assert len(autres) + len(categories) == cat.total_albums
+
+
 def test_stats_et_total(tmp_path):
     _biblio(tmp_path)
     cat = catalogue.scanner(tmp_path)

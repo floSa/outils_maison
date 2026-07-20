@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import pandas as pd
@@ -16,8 +17,8 @@ from ui import champ_dossier, champ_fichier_sortie
 
 st.title("🎵 Catalogue de la bibliothèque")
 st.caption(
-    "Liste **tous les albums** de la bibliothèque musicale (NAS) dans un CSV à deux "
-    "colonnes `artiste_ou_categorie;album`. Lecture seule : rien n'est modifié sur la source."
+    "Liste **tous les albums** de la bibliothèque musicale (NAS) dans un fichier Excel à "
+    "deux colonnes `Artiste` / `Album`. Lecture seule : rien n'est modifié sur la source."
 )
 
 racine = champ_dossier(
@@ -33,8 +34,15 @@ dossiers_artistes = DOSSIERS_ARTISTES_DEFAUT
 if st.button("Valider", type="primary"):
     with st.spinner("Parcours de la bibliothèque…"):
         try:
-            st.session_state["catalogue"] = scanner(base, dossiers_artistes)
+            cat = scanner(base, dossiers_artistes)
+            st.session_state["catalogue"] = cat
             st.session_state["catalogue_racine"] = str(base)
+            # Échantillon fixé au moment du scan (stable jusqu'au prochain Valider).
+            autres, categories = cat.blocs()
+            st.session_state["catalogue_apercu"] = (
+                random.sample(autres, min(5, len(autres))),
+                random.sample(categories, min(5, len(categories))),
+            )
         except RacineIndisponible as e:
             st.session_state.pop("catalogue", None)
             st.error(str(e))
@@ -54,8 +62,31 @@ if cat.avertissements:
             st.write(f"- {a}")
 
 st.markdown("#### Aperçu")
-df = pd.DataFrame(cat.lignes, columns=list(COLONNES))
-st.dataframe(df, use_container_width=True, hide_index=True, height=400)
+st.caption(
+    f"Échantillon au hasard pour vérifier la structure — le fichier Excel contient "
+    f"les {cat.total_albums} lignes."
+)
+ech_autres, ech_categories = st.session_state.get("catalogue_apercu", ([], []))
+
+st.markdown("**Quelques artistes de `__Autres`**")
+if ech_autres:
+    st.dataframe(
+        pd.DataFrame(ech_autres, columns=list(COLONNES)),
+        use_container_width=True,
+        hide_index=True,
+    )
+else:
+    st.caption("— aucun —")
+
+st.markdown("**Quelques albums des autres catégories**")
+if ech_categories:
+    st.dataframe(
+        pd.DataFrame(ech_categories, columns=list(COLONNES)),
+        use_container_width=True,
+        hide_index=True,
+    )
+else:
+    st.caption("— aucun —")
 
 st.divider()
 st.markdown("#### Export")
