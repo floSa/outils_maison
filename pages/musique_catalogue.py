@@ -4,14 +4,15 @@ import pandas as pd
 import streamlit as st
 
 from tools.catalogue import (
+    COLONNES,
     DOSSIERS_ARTISTES_DEFAUT,
     RacineIndisponible,
-    csv_texte,
-    ecrire_csv,
+    ecrire_excel,
+    excel_octets,
     recap,
     scanner,
 )
-from ui import FILETYPES_CSV, champ_dossier, champ_fichier_sortie
+from ui import champ_dossier, champ_fichier_sortie
 
 st.title("🎵 Catalogue de la bibliothèque")
 st.caption(
@@ -53,32 +54,32 @@ if cat.avertissements:
             st.write(f"- {a}")
 
 st.markdown("#### Aperçu")
-df = pd.DataFrame(cat.lignes, columns=["artiste_ou_categorie", "album"])
+df = pd.DataFrame(cat.lignes, columns=list(COLONNES))
 st.dataframe(df, use_container_width=True, hide_index=True, height=400)
 
 st.divider()
 st.markdown("#### Export")
 
 # Téléchargement direct : évite tout choix de destination, sans risque d'écrire
-# sous la racine. Le BOM utf-8-sig garantit les accents corrects dans Excel FR.
+# sous la racine.
 st.download_button(
-    "⬇️ Télécharger le CSV",
-    data=csv_texte(cat).encode("utf-8-sig"),
-    file_name="catalogue_albums.csv",
-    mime="text/csv",
+    "⬇️ Télécharger le fichier Excel",
+    data=excel_octets(cat),
+    file_name="catalogue_albums.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     type="primary",
 )
 
 st.caption("Ou enregistrer dans un dossier précis :")
 cible = champ_fichier_sortie(
-    "Fichier CSV de destination",
+    "Fichier Excel de destination",
     "catalogue_sortie",
-    valeur_defaut=str(Path.home() / "Desktop" / "catalogue_albums.csv"),
-    filetypes=FILETYPES_CSV,
+    valeur_defaut=str(Path.home() / "Desktop" / "catalogue_albums.xlsx"),
+    filetypes=[("Excel", "*.xlsx"), ("Tous les fichiers", "*.*")],
 )
-if cible and st.button("Enregistrer le CSV"):
+if cible and st.button("Enregistrer le fichier Excel"):
     try:
-        ecrit = ecrire_csv(cat, cible, racine)
+        ecrit = ecrire_excel(cat, cible, racine)
         st.success(f"Écrit : `{ecrit}`")
     except ValueError as e:
         st.error(str(e))

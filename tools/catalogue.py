@@ -19,11 +19,10 @@ catégorie** à sa racine. Deux structures coexistent, et le choix se fait
 On ne descend **jamais** plus profond : un album multi-disques (``Album\\CD 01``,
 ``Album\\CD 02``) produit **une seule ligne**, celle de ``Album``.
 
-Le CSV de sortie a deux colonnes (en-tête ``artiste_ou_categorie;album``),
-séparateur ``;``, encodage ``utf-8-sig`` (accents corrects dans Excel FR), fins
-de ligne ``\\r\\n``. Le tri est alphabétique sur la colonne A puis la colonne B,
-insensible à la casse et aux accents (clé de tri seulement — la valeur écrite
-reste l'originale).
+La sortie est un classeur Excel (``.xlsx``) à deux colonnes « Artiste », « Album ».
+Le tri est alphabétique sur la colonne Artiste puis la colonne Album, insensible
+à la casse et aux accents (clé de tri seulement — la valeur écrite reste
+l'originale).
 
 Lecture **strictement** en lecture seule : aucun accès aux fichiers eux-mêmes
 (seulement aux noms de dossiers, via ``os.scandir`` pour limiter les appels
@@ -32,14 +31,13 @@ réseau), aucune écriture, aucun renommage sous la racine scannée.
 
 from __future__ import annotations
 
-import csv
 import io
 import os
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-EN_TETE = ("artiste_ou_categorie", "album")
+COLONNES = ("Artiste", "Album")
 DOSSIERS_ARTISTES_DEFAUT = ("__autres",)
 
 
@@ -173,20 +171,22 @@ def _sous_la_racine(cible: Path, racine: Path) -> bool:
     return cible == racine or racine in cible.parents
 
 
-def csv_texte(catalogue: Catalogue) -> str:
-    """Sérialise le catalogue en texte CSV (``;``, fins de ligne ``\\r\\n``).
+def dataframe(catalogue: Catalogue):
+    """Construit un ``pandas.DataFrame`` à deux colonnes « Artiste », « Album »."""
+    import pandas as pd
 
-    Le texte est encodé en ``utf-8-sig`` par l'appelant (fichier ou téléchargement).
-    """
-    tampon = io.StringIO(newline="")
-    ecrivain = csv.writer(tampon, delimiter=";")
-    ecrivain.writerow(EN_TETE)
-    ecrivain.writerows(catalogue.lignes)
+    return pd.DataFrame(catalogue.lignes, columns=list(COLONNES))
+
+
+def excel_octets(catalogue: Catalogue) -> bytes:
+    """Sérialise le catalogue en classeur Excel (``.xlsx``), pour le téléchargement."""
+    tampon = io.BytesIO()
+    dataframe(catalogue).to_excel(tampon, index=False)
     return tampon.getvalue()
 
 
-def ecrire_csv(catalogue: Catalogue, chemin: str | Path, racine: str | Path) -> Path:
-    """Écrit le CSV sur disque en ``utf-8-sig``.
+def ecrire_excel(catalogue: Catalogue, chemin: str | Path, racine: str | Path) -> Path:
+    """Écrit le catalogue dans un fichier Excel.
 
     :raises ValueError: si ``chemin`` est situé sous ``racine`` (interdiction stricte
         d'écrire dans la bibliothèque scannée).
@@ -198,9 +198,7 @@ def ecrire_csv(catalogue: Catalogue, chemin: str | Path, racine: str | Path) -> 
             "Choisis une destination hors de la bibliothèque (Bureau, Téléchargements…)."
         )
     cible.parent.mkdir(parents=True, exist_ok=True)
-    # newline="" : csv gère lui-même les fins de ligne \r\n.
-    with open(cible, "w", encoding="utf-8-sig", newline="") as f:
-        f.write(csv_texte(catalogue))
+    dataframe(catalogue).to_excel(cible, index=False)
     return cible
 
 

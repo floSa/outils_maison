@@ -1,5 +1,3 @@
-import csv
-
 import pytest
 
 from tools import catalogue
@@ -109,27 +107,25 @@ def test_refus_ecriture_sous_la_racine(tmp_path):
     _biblio(tmp_path)
     cat = catalogue.scanner(tmp_path)
     with pytest.raises(ValueError, match="sous la racine"):
-        catalogue.ecrire_csv(cat, tmp_path / "sortie.csv", tmp_path)
+        catalogue.ecrire_excel(cat, tmp_path / "sortie.xlsx", tmp_path)
     with pytest.raises(ValueError, match="sous la racine"):
-        catalogue.ecrire_csv(cat, tmp_path / "__MUZAK" / "sortie.csv", tmp_path)
+        catalogue.ecrire_excel(cat, tmp_path / "__MUZAK" / "sortie.xlsx", tmp_path)
 
 
-def test_csv_ecrit_utf8_sig_point_virgule_crlf(tmp_path):
+def test_excel_ecrit_colonnes_artiste_album(tmp_path):
+    import pandas as pd
+
     _biblio(tmp_path)
     cat = catalogue.scanner(tmp_path)
-    cible = tmp_path.parent / "catalogue.csv"
-    catalogue.ecrire_csv(cat, cible, tmp_path)
+    cible = tmp_path.parent / "catalogue.xlsx"
+    catalogue.ecrire_excel(cat, cible, tmp_path)
 
-    brut = cible.read_bytes()
-    assert brut.startswith(b"\xef\xbb\xbf")  # BOM utf-8-sig
-    assert b";" in brut and b"\r\n" in brut
-
-    with open(cible, encoding="utf-8-sig", newline="") as f:
-        lignes = list(csv.reader(f, delimiter=";"))
-    assert lignes[0] == ["artiste_ou_categorie", "album"]
-    # une ligne d'en-tête + une par album
-    assert len(lignes) == 1 + cat.total_albums
-    assert ["Chilla", "Karma"] in lignes
+    df = pd.read_excel(cible)
+    assert list(df.columns) == ["Artiste", "Album"]
+    # une ligne par album (pas d'en-tête compté par pandas)
+    assert len(df) == cat.total_albums
+    couples = set(map(tuple, df.values.tolist()))
+    assert ("Chilla", "Karma") in couples
     # accents et caractères spéciaux préservés
-    assert ["Étienne Daho", "Éden"] in lignes
-    assert ["__MUZAK", "Œuvre"] in lignes
+    assert ("Étienne Daho", "Éden") in couples
+    assert ("__MUZAK", "Œuvre") in couples
