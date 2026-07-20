@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from tools.musique import (
-    NOM_DOSSIER_SINGLES,
+    NOM_CORBEILLE,
     NOM_JOURNAL,
     analyser,
     annuler,
@@ -16,7 +16,9 @@ from ui import champ_dossier
 st.title("🎼 Regrouper les singles")
 st.caption(
     "Parcourt une bibliothèque (racine → artistes → albums) et regroupe chaque album "
-    "à un seul titre dans un dossier `Singles/` par artiste, puis supprime le dossier vidé."
+    "à un seul titre dans un dossier `Singles/` par artiste (numéro de piste retiré, "
+    "pochettes déplacées). Le dossier vidé n'est **pas supprimé** : il part dans "
+    f"`{NOM_CORBEILLE}/`, à supprimer d'un clic ensuite. Rien n'est perdu."
 )
 
 racine = champ_dossier(
@@ -55,9 +57,9 @@ if plan.a_traiter:
         lignes.append(
             {
                 "Artiste": sa.artiste.name,
-                "Album (sera supprimé)": sa.album.name,
+                "Album (→ corbeille)": sa.album.name,
                 "Titre → Singles/": mv.audio_dst.name,
-                "Cover → Singles/": mv.cover_dst.name if mv.cover_dst else "—",
+                "Pochettes/annexes": len(mv.sidecars),
             }
         )
     st.dataframe(pd.DataFrame(lignes), use_container_width=True, hide_index=True)
@@ -71,15 +73,22 @@ if plan.a_verifier:
 st.divider()
 if plan.a_traiter:
     st.warning(
-        "L'opération **déplace** les fichiers et **supprime** les dossiers album vidés. "
-        "Un journal d'annulation est créé.",
+        "L'opération **déplace** les fichiers. Aucun fichier n'est supprimé : les "
+        f"dossiers vidés partent dans `{NOM_CORBEILLE}/`. Un journal d'annulation est créé.",
         icon="⚠️",
     )
     if st.button(f"Regrouper {len(plan.a_traiter)} single(s)", type="primary"):
         with st.status("Déplacement…", expanded=True) as status:
-            journal = appliquer(plan, racine, log=lambda m: st.write(m))
+            res = appliquer(plan, racine, log=lambda m: st.write(m))
             status.update(label="Terminé ✅", state="complete")
-        st.success(f"Regroupement effectué. Journal : `{journal.name}`")
+        st.success(
+            f"{res.nb_singles} single(s) regroupé(s), {res.nb_en_corbeille} dossier(s) "
+            f"en corbeille. Journal : `{res.journal.name}`"
+        )
+        if res.erreurs:
+            with st.expander(f"⚠️ {len(res.erreurs)} erreur(s)"):
+                for e in res.erreurs:
+                    st.write(f"- {e}")
         st.session_state.pop("singles_plan", None)
 
 if (Path(racine) / NOM_JOURNAL).is_file():
