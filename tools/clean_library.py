@@ -15,10 +15,12 @@ assurée par l'outil dédié :mod:`tools.musique`) :
 
 Règle 1 — nom de dossier d'album
     Supprime, **en fin de nom** et de façon répétée jusqu'à stabilité, les suffixes
-    techniques : ``(AAAA)`` (année 19xx/20xx), ``(Clean)``/``(Explicit)``,
-    ``[UPC…]``, ``[AAAA]``, ``{…}``. Les parenthèses porteuses de sens
-    (``(Deluxe)``, ``(Bande Originale du Film)``, ``(Four Tet Remix)``…) et les
-    parenthèses internes (``Génération(s)``) sont **préservées**.
+    techniques ``(Clean)``/``(Explicit)``, ``[UPC…]`` et ``{…}``. Une année finale
+    (``(2023)`` ou ``[2023]``) n'est retirée que si l'un de ces suffixes la suivait
+    (``Derealised (2023) (Clean) [UPC…]`` → ``Derealised``) ; une année **seule**
+    est conservée (``Nom (2023)`` reste ``Nom (2023)``, ``Nom [Disk 1]`` reste
+    ``Nom [Disk 1]``). Les parenthèses porteuses de sens (``(Deluxe)``,
+    ``(Bande Originale du Film)``…) et internes (``Génération(s)``) sont préservées.
 
 Règle 2 — nom de fichier audio
     ``01. Artiste - Titre.flac`` → ``01 - Titre.flac``. Le découpage artiste/titre
@@ -48,14 +50,17 @@ NOM_JOURNAL_NETTOYAGE = ".nettoyage_undo.json"
 # Caractères interdits par le système de fichiers → remplacés par « _ ».
 _CARACTERES_INTERDITS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
-# Règle 1 : suffixes techniques, reconnus uniquement en fin de chaîne.
-_SUFFIXES_ALBUM = [
-    re.compile(r"\((?:19|20)\d{2}\)\s*$"),            # (2018)
+# Règle 1 — suffixes techniques reconnus uniquement en fin de nom.
+# « Durs » : toujours retirés (ce sont clairement des métadonnées parasites).
+_SUFFIXES_DURS = [
     re.compile(r"\((?:clean|explicit)\)\s*$", re.I),  # (Clean) / (Explicit)
     re.compile(r"\[UPC[^\]]*\]\s*$", re.I),           # [UPC5060525433962]
-    re.compile(r"\[(?:19|20)\d{2}\]\s*$"),            # [2018]
     re.compile(r"\{[^}]*\}\s*$"),                     # {WEB}
 ]
+# Une année en fin — (2023) ou [2023] — n'est retirée QUE si un suffixe dur a
+# déjà été retiré à sa droite (ex. « (2023) (Clean) [UPC…] »). Une année SEULE
+# est conservée : « Nom (2023) » reste « Nom (2023) ».
+_ANNEE_FINALE = re.compile(r"(?:\((?:19|20)\d{2}\)|\[(?:19|20)\d{2}\])\s*$")
 
 # Règle 2 : « <num>. <reste> » ou « <num>) <reste> » (mais pas « <num> - … »).
 _PISTE = re.compile(r"^\s*(\d{1,3})\s*[.)]\s*(.+)$")
@@ -67,16 +72,37 @@ def _assainir(nom: str) -> str:
 
 
 def nettoyer_nom_album(nom: str) -> str:
-    """Applique la règle 1 : retire les suffixes techniques de fin, jusqu'à stabilité."""
+    """Applique la règle 1 : retire les suffixes techniques de fin, jusqu'à stabilité.
+
+    - ``(Clean)``, ``(Explicit)``, ``[UPC…]``, ``{…}`` : toujours retirés.
+    - Une année finale ``(2023)`` / ``[2023]`` n'est retirée que si un suffixe dur
+      la suivait (``Derealised (2023) (Clean) [UPC…]`` → ``Derealised``). Seule,
+      elle est conservée (``Nom (2023)`` reste ``Nom (2023)``).
+    - Tout le reste est préservé : ``[Disk 1]``, ``(Deluxe)``,
+      ``(Bande Originale du Film)``, parenthèses internes…
+    """
     resultat = nom.rstrip()
-    change = True
-    while change:
-        change = False
-        for motif in _SUFFIXES_ALBUM:
+    dur_retire = False
+    while True:
+        avant = resultat
+        for motif in _SUFFIXES_DURS:
             nouveau = motif.sub("", resultat).rstrip()
             if nouveau != resultat:
-                resultat, change = nouveau, True
-    return resultat
+                resultat = nouveau
+                dur_retire = True
+                break
+        if resultat != avant:
+            continue  # un suffixe dur retiré → on recommence
+        # Aucun suffixe dur ce tour : année conditionnelle si un dur a précédé.
+        if dur_retire:
+            nouveau = _ANNEE_FINALE.sub("", resultat).rstrip()
+            if nouveau != resultat:
+                resultat = nouveau
+                continue
+        break
+    # Si le nom était entièrement « technique » (ex. « {Awayland} »), on ne renvoie
+    # jamais un nom vide : mieux vaut le laisser tel quel que créer un artefact.
+    return resultat or nom.rstrip()
 
 
 def renommer_piste(stem: str) -> str | None:
@@ -155,27 +181,49 @@ def _libre(cible: Path, reserves: set[str]) -> Path:
         i += 1
 
 
-def appliquer(plan: PlanNettoyage, racine: str | Path) -> Path:
-    """Exécute le plan et écrit un journal d'annulation. Retourne le chemin du journal.
+@dataclass
+class ResultatNettoyage:
+    journal: Path
+    nb_renommes: int
+    erreurs: list[str] = field(default_factory=list)
+
+
+def appliquer(plan: PlanNettoyage, racine: str | Path) -> ResultatNettoyage:
+    """Exécute le plan et écrit un journal d'annulation.
 
     Les fichiers sont renommés **avant** les dossiers d'album : ainsi le renommage
     d'un dossier déplace des fichiers déjà à leur nom final, et les chemins
     calculés restent valides.
+
+    Résilient au réseau : si un renommage échoue (fichier verrouillé, chemin trop
+    long, permission), l'erreur est collectée et le traitement continue — jamais
+    d'interruption à mi-parcours. Aucun fichier n'est supprimé : uniquement des
+    renommages. Le journal (ce qui a réellement bougé) permet l'annulation.
     """
     reserves: set[str] = set()
     journal: list[dict[str, str]] = []
+    erreurs: list[str] = []
     for lot in (plan.pistes, plan.albums):
         for r in lot:
             if not r.ancien.exists():
                 continue
             cible = _libre(r.nouveau, reserves)
-            cible.parent.mkdir(parents=True, exist_ok=True)
-            r.ancien.rename(cible)
+            try:
+                cible.parent.mkdir(parents=True, exist_ok=True)
+                r.ancien.rename(cible)
+            except OSError as e:
+                erreurs.append(f"{r.ancien} : {e}")
+                continue
             journal.append({"de": str(cible), "vers": str(r.ancien)})
 
     chemin = Path(racine) / NOM_JOURNAL_NETTOYAGE
-    chemin.write_text(json.dumps(journal, ensure_ascii=False, indent=2), encoding="utf-8")
-    return chemin
+    try:
+        chemin.write_text(
+            json.dumps(journal, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except OSError as e:
+        erreurs.append(f"Journal d'annulation non écrit ({chemin}) : {e}")
+    return ResultatNettoyage(journal=chemin, nb_renommes=len(journal), erreurs=erreurs)
 
 
 def _normalise(valeur: str) -> str:

@@ -12,16 +12,27 @@ from tools.clean_library import (
 from ui import champ_dossier
 
 st.title("🧼 Nettoyer la bibliothèque")
-st.caption(
-    "Structure attendue : `Artiste / Album / Titres`. Deux règles : les suffixes "
-    "techniques des **dossiers d'album** (`(2018)`, `(Clean)`, `[UPC…]`, `{WEB}`…) sont "
-    "retirés, et les **fichiers** `01. Artiste - Titre` deviennent `01 - Titre`. "
-    "Aucun tag n'est lu ; rien n'est modifié tant que tu n'as pas confirmé."
-)
-st.info(
-    "Le regroupement des « singles » est assuré par l'outil dédié "
-    "**Regrouper les singles**.",
-    icon="🎼",
+st.caption("Structure attendue : `Artiste / Album / Titres`. Cet outil :")
+st.markdown(
+    """
+- **Nettoie les noms de dossiers d'album** en retirant les suffixes techniques
+  parasites en fin de nom :
+    - `(Clean)`, `(Explicit)`, `[UPC…]`, `{WEB}` → toujours retirés
+    - une année qui les précède est retirée aussi :
+      `Derealised (2023) (Clean) [UPC…]` → `Derealised`
+    - **mais une date ou un tome seul est conservé** : `Nom (2023)` reste
+      `Nom (2023)`, `Nom [Disk 1]` reste `Nom [Disk 1]`
+    - les mentions porteuses de sens restent : `(Deluxe)`,
+      `(Bande Originale du Film)`…
+- **Renomme les fichiers audio** `01. Artiste - Titre` → `01 - Titre`
+  (retire l'artiste, garde le n° de piste et le titre).
+- **Ne touche à rien d'autre** : aucun tag lu, aucun fichier supprimé, aucun
+  dossier supprimé. Les « singles » sont gérés par l'outil dédié
+  **Regrouper les singles**.
+
+Rien n'est modifié tant que tu n'as pas cliqué **Appliquer** : l'analyse ne fait
+qu'afficher ce qui changerait. Un journal permet d'annuler après coup.
+"""
 )
 
 racine = champ_dossier(
@@ -87,8 +98,20 @@ if plan is not None:
             icon="⚠️",
         )
         if st.button("Appliquer le nettoyage", type="primary"):
-            journal = appliquer(plan, racine)
-            st.success(f"Nettoyage appliqué. Journal : `{journal.name}`")
+            with st.spinner("Renommage en cours…"):
+                resultat = appliquer(plan, racine)
+            st.success(
+                f"{resultat.nb_renommes} renommage(s) effectué(s). "
+                f"Journal : `{resultat.journal.name}`"
+            )
+            if resultat.erreurs:
+                st.warning(
+                    f"{len(resultat.erreurs)} élément(s) n'ont pas pu être renommés "
+                    "(verrouillé, chemin trop long, permission). Aucun fichier perdu."
+                )
+                with st.expander("Voir les erreurs"):
+                    for e in resultat.erreurs:
+                        st.write(f"- {e}")
             st.session_state.pop("nettoyer_plan", None)
 
 if (base / NOM_JOURNAL_NETTOYAGE).is_file():
