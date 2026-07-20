@@ -66,6 +66,23 @@ def test_tri_insensible_accents_casse(tmp_path):
     assert albums == ["abba", "Éden", "zoo"]
 
 
+def test_autres_avant_les_categories(tmp_path):
+    _biblio(tmp_path)
+    cat = catalogue.scanner(tmp_path)
+    noms_categories = {"__MUZAK"}  # seule catégorie 2 niveaux dans _biblio
+    # Toutes les lignes __Autres (artistes) doivent precéder toute ligne de catégorie.
+    dernier_artiste = max(
+        i for i, (a, _) in enumerate(cat.lignes) if a not in noms_categories
+    )
+    premier_categorie = min(
+        i for i, (a, _) in enumerate(cat.lignes) if a in noms_categories
+    )
+    assert dernier_artiste < premier_categorie
+    # Dans le bloc artistes, tri par artiste (Chilla avant Étienne Daho).
+    artistes_ordre = [a for a, _ in cat.lignes if a not in noms_categories]
+    assert artistes_ordre == sorted(artistes_ordre, key=str.casefold)
+
+
 def test_stats_et_total(tmp_path):
     _biblio(tmp_path)
     cat = catalogue.scanner(tmp_path)

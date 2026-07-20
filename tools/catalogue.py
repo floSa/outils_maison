@@ -130,7 +130,9 @@ def scanner(
     ]
     categories.sort(key=lambda c: _cle_tri(c.name))
 
-    lignes: list[tuple[str, str]] = []
+    # rang 0 = artistes des dossiers « artistes » (__Autres) → en premier ;
+    # rang 1 = albums des autres catégories → ensuite.
+    lignes_rang: list[tuple[int, str, str]] = []
     stats: list[CategorieStat] = []
 
     for cat in categories:
@@ -141,7 +143,7 @@ def scanner(
             for artiste in _sous_dossiers(cat_path, avertissements):
                 nb_artistes += 1
                 for album in _sous_dossiers(Path(artiste.path), avertissements):
-                    lignes.append((artiste.name, album.name))
+                    lignes_rang.append((0, artiste.name, album.name))
                     nb_albums += 1
             stats.append(
                 CategorieStat(cat.name, True, nb_albums, nb_artistes=nb_artistes)
@@ -150,10 +152,13 @@ def scanner(
             # 2 niveaux : catégorie → albums.
             albums = _sous_dossiers(cat_path, avertissements)
             for album in albums:
-                lignes.append((cat.name, album.name))
+                lignes_rang.append((1, cat.name, album.name))
             stats.append(CategorieStat(cat.name, False, len(albums)))
 
-    lignes.sort(key=lambda t: (_cle_tri(t[0]), _cle_tri(t[1])))
+    # Bloc __Autres (artistes) d'abord, puis les catégories ; chaque bloc trié
+    # par colonne A puis B, insensible à la casse et aux accents.
+    lignes_rang.sort(key=lambda t: (t[0], _cle_tri(t[1]), _cle_tri(t[2])))
+    lignes = [(a, b) for _, a, b in lignes_rang]
     return Catalogue(lignes=lignes, stats=stats, avertissements=avertissements)
 
 
