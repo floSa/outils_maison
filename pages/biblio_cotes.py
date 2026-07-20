@@ -32,8 +32,12 @@ else:
 if not texte.strip():
     st.stop()
 
-entrees = trier_par_cote(parser_lignes(texte))
-resultat = formater(entrees)
+if st.button("Trier", type="primary"):
+    st.session_state["cotes_resultat"] = formater(trier_par_cote(parser_lignes(texte)))
+
+resultat = st.session_state.get("cotes_resultat")
+if not resultat:
+    st.stop()
 
 st.markdown("#### Résultat trié")
 st.code(resultat, language="text")

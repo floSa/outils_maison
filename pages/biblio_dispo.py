@@ -1,9 +1,11 @@
 import io
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from tools.biblio import parser_lignes
+from ui import FILETYPES_TEXTE, champ_fichier
 
 st.title("📗 Vérifier la disponibilité BM Lyon")
 st.caption(
@@ -24,11 +26,26 @@ except ModuleNotFoundError:
     )
     st.stop()
 
-texte = st.text_area(
-    "Lignes « Artiste - Album - Cote » (une par ligne, copiées depuis un tableur)",
-    height=220,
-    placeholder="Cliff Martinez - The Knick - 786.1 KNI 3\nGaëtan Roussel - Ginger - 780.65 ROU",
-)
+source = st.radio("Source", ["Coller du texte", "Fichier"], horizontal=True)
+
+texte = ""
+if source == "Coller du texte":
+    texte = st.text_area(
+        "Lignes « Artiste - Album - Cote » (une par ligne, copiées depuis un tableur)",
+        height=220,
+        placeholder="Cliff Martinez - The Knick - 786.1 KNI 3\nGaëtan Roussel - Ginger - 780.65 ROU",
+    )
+else:
+    chemin = champ_fichier(
+        "Fichier texte",
+        "bm_dispo_chemin",
+        filetypes=FILETYPES_TEXTE,
+        placeholder="C:/Users/.../cotes_bibli.txt",
+    )
+    if chemin and Path(chemin).is_file():
+        texte = Path(chemin).read_text(encoding="utf-8")
+    elif chemin:
+        st.error("Fichier introuvable.")
 
 entrees = [e for e in parser_lignes(texte) if e.cote] if texte.strip() else []
 invalides = [e for e in parser_lignes(texte) if not e.cote] if texte.strip() else []
