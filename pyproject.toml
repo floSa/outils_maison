@@ -16,17 +16,11 @@ dependencies = [
     "imagehash>=4.3.2",
     "pymupdf>=1.28.0",
     "pillow-heif>=1.4.0",
-]
-
-[project.optional-dependencies]
-# Appariement de fonds d'écran paysage/portrait (SIFT + RANSAC).
-# OpenCV seul (~60 Mo), sans torch. Installer avec :  uv sync --extra vision
-vision = [
+    # Appariement de fonds d'écran paysage/portrait (SIFT + RANSAC). OpenCV
+    # seul (~60 Mo), sans torch.
     "opencv-python>=4.10",
-]
-# Vérification de disponibilité au catalogue BM Lyon (scraping Playwright).
-# Après install :  uv run playwright install chromium
-scraping = [
+    # Vérification de disponibilité au catalogue BM Lyon (scraping).
+    # Le navigateur s'installe séparément :  uv run playwright install chromium
     "playwright>=1.40",
 ]
 

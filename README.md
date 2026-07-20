@@ -19,7 +19,7 @@ flowchart TD
   p["pages/ — 1 page par outil"] -->|chemins + options| t["tools/ — logique pure"]
   t --> ff["ffmpeg embarqué (imageio-ffmpeg)"]
   t <--> fs[("Dossiers locaux")]
-  t -.->|extra scraping| bm["catalogue BM Lyon"]
+  t -.-> bm["catalogue BM Lyon"]
   t -->|résultat| p
 ```
 
@@ -31,10 +31,8 @@ Détails : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (le COMMENT) et
 **Prérequis** : Python `>=3.12` et [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync                    # dépendances de base
-uv sync --extra vision     # + appariement de fonds d'écran (OpenCV seul, ~60 Mo)
-uv sync --extra scraping   # + vérification BM Lyon (Playwright)
-uv run playwright install chromium   # navigateur pour l'extra scraping
+uv sync                              # installe tout (~60 Mo, sans torch)
+uv run playwright install chromium  # navigateur pour la vérification BM Lyon
 ```
 
 Lancer l'application :
@@ -48,21 +46,18 @@ uv run streamlit run app.py
 | Catégorie | Outils |
 |---|---|
 | Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
-| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran¹ · Auditer les fonds triés¹ |
+| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran · Auditer les fonds triés |
 | Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
 | PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
-| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon² |
+| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
 >
-> ¹ L'appariement de fonds d'écran (paysage ↔ portrait, par SIFT + RANSAC) nécessite
-> l'extra `vision` : `uv sync --extra vision`.
->
-> ² La vérification BM Lyon nécessite l'extra `scraping` :
-> `uv sync --extra scraping` puis `uv run playwright install chromium`.
+> La vérification BM Lyon nécessite en plus le navigateur Playwright :
+> `uv run playwright install chromium`.
 
 ## Tests
 
@@ -84,13 +79,13 @@ outils_maison/
 │   ├── audio.py        #   normalisation FLAC, extraction, renommage par tags
 │   ├── musique.py      #   regroupement de singles
 │   ├── images.py       #   redimensionner, convertir, dédupliquer, renuméroter
-│   ├── fonds.py        #   appariement fonds d'écran SIFT+RANSAC (extra vision)
+│   ├── fonds.py        #   appariement fonds d'écran SIFT+RANSAC
 │   ├── video.py        #   fusionner, découper, compresser
 │   ├── pdf.py          #   extraire, fusionner, pages, images ↔ PDF
 │   ├── files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
 │   ├── data.py         #   conversions CSV / Excel / JSON
 │   ├── biblio.py       #   tri de cotes de bibliothèque
-│   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (extra scraping)
+│   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (scraping)
 ├── pages/              # une page Streamlit par outil
 ├── tests/              # tests pytest (logique + rendu des pages)
 ├── notebooks_archive/  # notebooks d'origine, conservés en référence
@@ -121,6 +116,6 @@ Licences usuelles des briques utilisées — **à vérifier selon la version ins
 | pillow-heif | Support HEIC | *à confirmer* (BSD/Apache selon version) |
 | ImageHash | Empreintes perceptuelles | BSD-2-Clause |
 | tqdm | Barres de progression | MPL-2.0 / MIT |
-| opencv-python (extra `vision`) | Vision (SIFT/RANSAC) | Apache-2.0 |
-| Playwright (extra `scraping`) | Navigateur pour scraping | Apache-2.0 |
+| opencv-python | Vision (SIFT/RANSAC) | Apache-2.0 |
+| Playwright | Navigateur pour scraping | Apache-2.0 |
 | **Ce projet** | Code applicatif | MIT — Copyright (c) 2026 floSa |

@@ -9,7 +9,7 @@ Stratégie : on apparie **du plus sûr au moins sûr**. À chaque tour on prend 
 score maximum de toute la matrice, on verrouille ce couple et on retire les deux
 images du pool — les paires certaines cessent ainsi de polluer les cas ambigus.
 
-OpenCV est importé paresseusement (extra `vision`, ~60 Mo).
+OpenCV est importé paresseusement (dépendance de base, ~60 Mo, sans torch).
 """
 
 from __future__ import annotations

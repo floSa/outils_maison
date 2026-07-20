@@ -64,8 +64,8 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 | Données / tableurs | pandas · openpyxl | BSD-3-Clause · MIT |
 | PDF | pypdf · PyMuPDF | BSD-3-Clause · AGPL-3.0 |
 | Médias | moviepy · ffmpeg embarqué | MIT · LGPL/GPL (binaire) |
-| Vision (extra) | opencv-python | Apache-2.0 |
-| Scraping (extra) | Playwright | Apache-2.0 |
+| Vision | opencv-python | Apache-2.0 |
+| Scraping | Playwright | Apache-2.0 |
 | Ce projet | Code applicatif | MIT — Copyright (c) 2026 floSa |
 
 ---
@@ -75,7 +75,8 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 **Décisions figées**
 - Séparer la logique (`tools/`) de l'UI (`pages/`) : logique testable sans Streamlit.
 - ffmpeg embarqué (`imageio-ffmpeg`) plutôt que ffmpeg système.
-- Dépendances lourdes en extras (`vision`, `scraping`) avec imports paresseux.
+- Vision (`opencv-python`) et scraping (`playwright`) en dépendances de base : un
+  seul `uv sync` installe tout (le navigateur Playwright se télécharge à part).
 - Prévisualiser puis appliquer, avec journal d'annulation, pour toute opération
   destructive sur les fichiers.
 
@@ -84,8 +85,6 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 
 **À trancher**
 - Fixer `imageio-ffmpeg` en dépendance directe (aujourd'hui transitif). `<à confirmer>`
-- Corriger la mention « torch + opencv ~2-3 Go » de `pages/accueil.py` (l'extra `vision`
-  n'installe qu'OpenCV, ~60 Mo). `<à confirmer>`
 
 ---
 

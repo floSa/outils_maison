@@ -28,13 +28,13 @@ Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge u
 | [`audio.py`](../tools/audio.py) | Normalisation FLAC, conversion, extraction, découpe, volume, tags | `mutagen`, ffmpeg |
 | [`musique.py`](../tools/musique.py) | Regroupement de singles | `<à confirmer>` |
 | [`images.py`](../tools/images.py) | Redimensionner, convertir (dont HEIC), dédupliquer, renuméroter | `pillow`, `pillow-heif`, `imagehash` |
-| [`fonds.py`](../tools/fonds.py) | Appariement fonds d'écran paysage↔portrait (SIFT + RANSAC), audit, déduplication | `opencv-python` (extra `vision`), `imagehash`, `pillow` |
+| [`fonds.py`](../tools/fonds.py) | Appariement fonds d'écran paysage↔portrait (SIFT + RANSAC), audit, déduplication | `opencv-python`, `imagehash`, `pillow` |
 | [`video.py`](../tools/video.py) | Fusionner, découper, compresser, convertir, extraire images, GIF | `moviepy`, ffmpeg |
 | [`pdf.py`](../tools/pdf.py) | Extraire/fusionner/pivoter des pages, images↔PDF, compresser, protéger, texte | `pypdf`, `pymupdf` |
 | [`files.py`](../tools/files.py) | Noms (slugify), doublons (SHA-1), arborescence→Excel, rangement, stats, comparaison, renommage CSV | `pandas`, `openpyxl` |
 | [`data.py`](../tools/data.py) | Conversions CSV / Excel / JSON, nettoyage de lignes | `pandas`, `openpyxl` |
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
-| [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright` (extra `scraping`), `difflib` |
+| [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
 
 > Les 40 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
@@ -52,8 +52,8 @@ Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge u
 | Tags audio | mutagen | `>=1.47` |
 | Images | Pillow · pillow-heif · ImageHash | `>=11.0` · `>=1.4.0` · `>=4.3.2` |
 | Progression | tqdm | `>=4.67` |
-| Vision (extra `vision`) | opencv-python | `>=4.10` |
-| Scraping (extra `scraping`) | Playwright | `>=1.40` |
+| Vision | opencv-python | `>=4.10` |
+| Scraping | Playwright | `>=1.40` |
 | Runtime | Python | `>=3.12` |
 | Gestion projet | uv | `uv.lock` présent |
 
@@ -92,7 +92,7 @@ flowchart TD
   p -->|chemins + options| t
   t --> ff --> ffmpeg
   t <--> fs
-  t -.->|extra scraping| bm
+  t -.-> bm
   t -->|résultat| p
 ```
 
@@ -142,7 +142,6 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Aspect | Limitation / État | Recommandation |
 |---|---|---|
 | Scraping BM Lyon | Couplé au HTML du catalogue, `time.sleep` codés en dur, best-effort | Surveiller les changements de sélecteurs ; garder le matching testé |
-| Extra `vision` | Page d'accueil mentionne « torch + opencv ~2-3 Go », or `pyproject.toml` n'installe qu'`opencv-python` (~60 Mo, sans torch) | Corriger le texte de [`pages/accueil.py`](../pages/accueil.py) `<à confirmer>` |
 | Chemins | Saisis en clair, orientés Windows (`M:/…`) | OK pour usage perso ; pas de validation forte |
 | `imageio-ffmpeg` | Dépendance transitive non déclarée | La fixer en dépendance directe |
 | Tests des pages | Smoke-test de rendu à entrées vides uniquement | Ajouter des tests de bout en bout sur données factices si besoin |

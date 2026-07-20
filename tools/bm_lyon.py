@@ -19,7 +19,7 @@ Deux corrections de bugs à NE PAS régresser (héritées de Musique_Tools) :
   contenir " - " ("Prêté - Retour prévu le : 06/08/2026") ; un ``rsplit``
   couperait la cote en deux.
 
-Playwright est importé paresseusement (extra ``scraping``) : tout le matching
+Playwright est importé paresseusement (dépendance de base) : tout le matching
 reste testable sans navigateur.
 """
 

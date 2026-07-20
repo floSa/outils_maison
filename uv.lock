@@ -98,7 +98,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -862,22 +862,16 @@ dependencies = [
     { name = "imagehash" },
     { name = "moviepy" },
     { name = "mutagen" },
+    { name = "opencv-python" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pillow" },
     { name = "pillow-heif" },
+    { name = "playwright" },
     { name = "pymupdf" },
     { name = "pypdf" },
     { name = "streamlit" },
     { name = "tqdm" },
-]
-
-[package.optional-dependencies]
-scraping = [
-    { name = "playwright" },
-]
-vision = [
-    { name = "opencv-python" },
 ]
 
 [package.dev-dependencies]
@@ -891,18 +885,17 @@ requires-dist = [
     { name = "imagehash", specifier = ">=4.3.2" },
     { name = "moviepy", specifier = ">=2.0" },
     { name = "mutagen", specifier = ">=1.47" },
-    { name = "opencv-python", marker = "extra == 'vision'", specifier = ">=4.10" },
+    { name = "opencv-python", specifier = ">=4.10" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.2" },
     { name = "pillow", specifier = ">=11.0" },
     { name = "pillow-heif", specifier = ">=1.4.0" },
-    { name = "playwright", marker = "extra == 'scraping'", specifier = ">=1.40" },
+    { name = "playwright", specifier = ">=1.40" },
     { name = "pymupdf", specifier = ">=1.28.0" },
     { name = "pypdf", specifier = ">=5.0" },
     { name = "streamlit", specifier = ">=1.40" },
     { name = "tqdm", specifier = ">=4.67" },
 ]
-provides-extras = ["vision", "scraping"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -985,7 +978,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [

@@ -24,9 +24,3 @@ st.info(
     "(ex. `M:/musiques` ou `C:/Users/.../doc.pdf`).",
     icon="💡",
 )
-
-with st.expander("Outils nécessitant l'extra « vision » (non installé par défaut)"):
-    st.markdown(
-        "L'appariement de fonds d'écran (SIFT/CNN) requiert `torch` + `opencv` "
-        "(~2-3 Go). Installer avec `uv sync --extra vision`."
-    )
