@@ -59,7 +59,7 @@ if plan.a_traiter:
                 "Artiste": sa.artiste.name,
                 "Album (→ corbeille)": sa.album.name,
                 "Titre → Singles/": mv.audio_dst.name,
-                "Pochettes/annexes": len(mv.sidecars),
+                "Fichiers annexes (→ Singles)": len(mv.annexes),
             }
         )
     st.dataframe(pd.DataFrame(lignes), use_container_width=True, hide_index=True)
