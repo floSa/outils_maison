@@ -32,19 +32,22 @@ EXT_AUDIO = (".flac", ".mp3", ".m4a", ".wav", ".ogg", ".opus", ".wma", ".aac", "
 # Fichiers annexes déplacés avec le single (pochettes et métadonnées).
 SIDECAR_EXT = (
     ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff",
-    ".pdf", ".txt", ".log", ".cue", ".nfo",
+    ".pdf", ".txt", ".log", ".cue", ".nfo", ".lrc",
 )
 FICHIERS_JUNK = {"thumbs.db", ".ds_store", "desktop.ini"}
 NOM_DOSSIER_SINGLES = "Singles"
 NOM_CORBEILLE = "_albums_vides_a_supprimer"
 NOM_JOURNAL = ".singles_undo.json"
 
-# Numéro de piste en tête, suivi d'un séparateur : « 01 - », « 01. », « 01) ».
-_RE_NUM_PISTE = re.compile(r"^\s*\d{1,3}\s*[-.)]\s*")
+# Numéro de piste en tête. Deux formes retirées :
+#   - numéro suivi d'un séparateur : « 01 - », « 01. », « 01) » ;
+#   - numéro **à zéro devant** suivi d'un espace : « 01 », « 02 »… (sans ambiguïté).
+# Un nombre non zéro-paddé sans séparateur est laissé (« 99 Luftballons », « 7 Years »).
+_RE_NUM_PISTE = re.compile(r"^\s*(?:\d{1,3}\s*[-.)]\s*|0\d{1,2}\s+)")
 
 
 def _titre_sans_numero(stem: str) -> str:
-    """Retire le préfixe « numéro + séparateur ». ``01 - Ring Ring`` → ``Ring Ring``."""
+    """Retire le préfixe de numéro de piste. ``01 - Ring Ring`` / ``01 Ring Ring`` → ``Ring Ring``."""
     return _RE_NUM_PISTE.sub("", stem).strip() or stem
 
 

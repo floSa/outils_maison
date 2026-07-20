@@ -36,9 +36,13 @@ def _biblio(racine: Path):
 def test_titre_sans_numero():
     assert musique._titre_sans_numero("01 - Ring Ring") == "Ring Ring"
     assert musique._titre_sans_numero("07. Titre") == "Titre"
+    assert musique._titre_sans_numero("01 Escapism") == "Escapism"   # zéro devant + espace
+    assert musique._titre_sans_numero("09 Numb") == "Numb"
     assert musique._titre_sans_numero("Sans numero") == "Sans numero"
-    # pas de séparateur → on ne touche pas (protège « 99 Luftballons »)
+    # non zéro-paddé sans séparateur → conservé (titres commençant par un nombre)
     assert musique._titre_sans_numero("99 Luftballons") == "99 Luftballons"
+    assert musique._titre_sans_numero("7 Years") == "7 Years"
+    assert musique._titre_sans_numero("24K Magic") == "24K Magic"
 
 
 def test_analyser_classement(tmp_path):
