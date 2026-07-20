@@ -26,8 +26,13 @@ if not base.is_dir():
     st.stop()
 
 if st.button("Vérifier", type="primary"):
-    with st.spinner("Analyse des titres…"):
-        st.session_state["verifier_resultats"] = verifier_titres(base)
+    barre = st.progress(0.0, text="Analyse des titres…")
+
+    def _prog(fait, total):
+        barre.progress(fait / total if total else 1.0, text=f"Artiste {fait}/{total}")
+
+    st.session_state["verifier_resultats"] = verifier_titres(base, progress=_prog)
+    barre.empty()
 
 resultats = st.session_state.get("verifier_resultats")
 if resultats is None:

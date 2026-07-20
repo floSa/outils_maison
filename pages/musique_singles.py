@@ -28,9 +28,14 @@ if st.button("Analyser", type="primary"):
     if not base.is_dir():
         st.error(f"Dossier introuvable : {base}")
         st.stop()
-    with st.spinner("Analyse de l'arborescence…"):
-        st.session_state["singles_plan"] = analyser(base)
-        st.session_state["singles_racine"] = str(base)
+    barre = st.progress(0.0, text="Analyse de l'arborescence…")
+
+    def _prog(fait, total):
+        barre.progress(fait / total if total else 1.0, text=f"Artiste {fait}/{total}")
+
+    st.session_state["singles_plan"] = analyser(base, progress=_prog)
+    st.session_state["singles_racine"] = str(base)
+    barre.empty()
 
 plan = st.session_state.get("singles_plan")
 if not plan:

@@ -37,10 +37,15 @@ niveaux.
 from __future__ import annotations
 
 import json
+import os
 import re
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# Rapporte l'avancement d'un scan : (artistes traités, total artistes).
+Progression = Callable[[int, int], None]
 
 from tools.files import Renommage
 
@@ -130,31 +135,63 @@ class PlanNettoyage:
 
 
 def _sous_dossiers_visibles(chemin: Path) -> list[Path]:
-    """Sous-dossiers directs, hors dossiers ``.``/``_`` (systèmes, outils, ``Singles``… non)."""
-    return sorted(
-        p
-        for p in chemin.iterdir()
-        if p.is_dir() and not p.name.startswith((".", "_"))
-    )
+    """Sous-dossiers directs, hors dossiers ``.``/``_``.
+
+    Via ``os.scandir`` (le type est mis en cache par le noyau : bien moins d'appels
+    ``stat`` qu'``iterdir`` + ``is_dir``, ce qui compte énormément sur un partage réseau).
+    """
+    out: list[Path] = []
+    try:
+        with os.scandir(chemin) as it:
+            for e in it:
+                if e.name.startswith((".", "_")):
+                    continue
+                try:
+                    if e.is_dir():
+                        out.append(Path(e.path))
+                except OSError:
+                    continue
+    except OSError:
+        return []
+    return sorted(out)
 
 
-def previsualiser_nettoyage(racine: str | Path) -> PlanNettoyage:
-    """Calcule les renommages des règles 1 et 2 sans rien modifier (l'« audit »)."""
+def _fichiers_audio(album: Path):
+    """Itère les fichiers audio d'un album (récursif : CD 01 / CD 02).
+
+    Via ``os.walk`` : on ne lit que les **noms** (aucun ``stat`` par fichier). Les
+    sous-dossiers ``.``/``_`` sont ignorés.
+    """
+    for dirpath, dirnames, filenames in os.walk(album):
+        dirnames[:] = [d for d in dirnames if not d.startswith((".", "_"))]
+        for nom in filenames:
+            stem, ext = os.path.splitext(nom)
+            if ext.lower() in AUDIO_EXT:
+                yield Path(dirpath) / nom, stem, ext
+
+
+def previsualiser_nettoyage(
+    racine: str | Path, *, progress: Progression | None = None
+) -> PlanNettoyage:
+    """Calcule les renommages des règles 1 et 2 sans rien modifier (l'« audit »).
+
+    :param progress: rappelé après chaque artiste avec ``(traités, total)``.
+    """
     base = Path(racine)
     if not base.is_dir():
         raise NotADirectoryError(f"Dossier introuvable : {base}")
 
     plan = PlanNettoyage()
-    for artiste in _sous_dossiers_visibles(base):
+    artistes = _sous_dossiers_visibles(base)
+    total = len(artistes)
+    for i, artiste in enumerate(artistes, 1):
         for album in _sous_dossiers_visibles(artiste):
-            # Règle 2 — récursive (albums multi-disques CD 01 / CD 02).
-            for f in sorted(album.rglob("*")):
-                if not f.is_file() or f.suffix.lower() not in AUDIO_EXT:
-                    continue
-                nouveau_stem = renommer_piste(f.stem)
+            # Règle 2 — fichiers audio (récursif pour les albums multi-disques).
+            for f, stem, ext in _fichiers_audio(album):
+                nouveau_stem = renommer_piste(stem)
                 if nouveau_stem is None:
                     continue
-                cible = f.with_name(_assainir(nouveau_stem) + f.suffix)
+                cible = f.with_name(_assainir(nouveau_stem) + ext)
                 if cible != f:
                     plan.pistes.append(Renommage(ancien=f, nouveau=cible))
             # Règle 1 — nom du dossier d'album.
@@ -163,6 +200,8 @@ def previsualiser_nettoyage(racine: str | Path) -> PlanNettoyage:
                 plan.albums.append(
                     Renommage(ancien=album, nouveau=album.with_name(nouveau_nom))
                 )
+        if progress:
+            progress(i, total)
     return plan
 
 
@@ -252,35 +291,41 @@ class TitreDouteux:
     raisons: list[str] = field(default_factory=list)
 
 
-def verifier_titres(racine: str | Path) -> list[TitreDouteux]:
+def verifier_titres(
+    racine: str | Path, *, progress: Progression | None = None
+) -> list[TitreDouteux]:
     """Audit **en lecture seule** : liste les fichiers dont le titre n'est pas « seul ».
 
     Un titre est douteux s'il contient encore le nom de l'artiste ou de l'album, ou
     s'il est resté au format « numéro. Artiste - Titre ». Ne modifie rien.
+
+    :param progress: rappelé après chaque artiste avec ``(traités, total)``.
     """
     base = Path(racine)
     if not base.is_dir():
         raise NotADirectoryError(f"Dossier introuvable : {base}")
 
     resultats: list[TitreDouteux] = []
-    for artiste in _sous_dossiers_visibles(base):
+    artistes = _sous_dossiers_visibles(base)
+    total = len(artistes)
+    for i, artiste in enumerate(artistes, 1):
         for album in _sous_dossiers_visibles(artiste):
-            for f in sorted(album.rglob("*")):
-                if not f.is_file() or f.suffix.lower() not in AUDIO_EXT:
-                    continue
-                titre = _normalise(_titre_nu(f.stem))
+            for f, stem, _ext in _fichiers_audio(album):
+                titre = _normalise(_titre_nu(stem))
                 raisons: list[str] = []
                 if _normalise(artiste.name) in titre:
                     raisons.append("contient l'artiste")
                 if _normalise(album.name) in titre:
                     raisons.append("contient l'album")
-                m = _PISTE.match(f.stem)
+                m = _PISTE.match(stem)
                 if m and " - " in m.group(2):
                     raisons.append("format « numéro. Artiste - Titre »")
                 if raisons:
                     resultats.append(
                         TitreDouteux(artiste.name, album.name, f, raisons=raisons)
                     )
+        if progress:
+            progress(i, total)
     return resultats
 
 

@@ -34,11 +34,15 @@ from __future__ import annotations
 import io
 import os
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 COLONNES = ("Artiste", "Album")
 DOSSIERS_ARTISTES_DEFAUT = ("__autres",)
+
+# Rapporte l'avancement d'un scan : (unités traitées, total).
+Progression = Callable[[int, int], None]
 
 
 class RacineIndisponible(RuntimeError):
@@ -113,9 +117,13 @@ def _sous_dossiers(chemin: Path, avertissements: list[str]) -> list[os.DirEntry]
 def scanner(
     racine: str | Path,
     dossiers_artistes: tuple[str, ...] = DOSSIERS_ARTISTES_DEFAUT,
+    *,
+    progress: Progression | None = None,
 ) -> Catalogue:
     """Parcourt ``racine`` et produit le catalogue trié (lignes, stats, avertissements).
 
+    :param progress: rappelé régulièrement avec ``(unités traitées, total)`` — une
+        unité = un artiste (dans __Autres) ou une catégorie.
     :raises RacineIndisponible: si la racine est introuvable ou inaccessible
         (lecteur réseau non monté, partage déconnecté).
     """
@@ -139,21 +147,37 @@ def scanner(
     ]
     categories.sort(key=lambda c: _cle_tri(c.name))
 
+    # Pré-liste les artistes des dossiers « artistes » pour un total fin de
+    # progression (et pour ne les lister qu'une fois).
+    artistes_par_cat: dict[str, list[os.DirEntry]] = {}
+    total = 0
+    for cat in categories:
+        if cat.name.casefold() in artistes:
+            lst = _sous_dossiers(Path(cat.path), avertissements)
+            artistes_par_cat[cat.name] = lst
+            total += len(lst)
+        else:
+            total += 1
+
     # rang 0 = artistes des dossiers « artistes » (__Autres) → en premier ;
     # rang 1 = albums des autres catégories → ensuite.
     lignes_rang: list[tuple[int, str, str]] = []
     stats: list[CategorieStat] = []
+    fait = 0
 
     for cat in categories:
         cat_path = Path(cat.path)
         if cat.name.casefold() in artistes:
             # 3 niveaux : catégorie → artistes → albums.
             nb_artistes = nb_albums = 0
-            for artiste in _sous_dossiers(cat_path, avertissements):
+            for artiste in artistes_par_cat[cat.name]:
                 nb_artistes += 1
                 for album in _sous_dossiers(Path(artiste.path), avertissements):
                     lignes_rang.append((0, artiste.name, album.name))
                     nb_albums += 1
+                fait += 1
+                if progress:
+                    progress(fait, total)
             stats.append(
                 CategorieStat(cat.name, True, nb_albums, nb_artistes=nb_artistes)
             )
@@ -163,6 +187,9 @@ def scanner(
             for album in albums:
                 lignes_rang.append((1, cat.name, album.name))
             stats.append(CategorieStat(cat.name, False, len(albums)))
+            fait += 1
+            if progress:
+                progress(fait, total)
 
     # Bloc __Autres (artistes) d'abord, puis les catégories ; chaque bloc trié
     # par colonne A puis B, insensible à la casse et aux accents.

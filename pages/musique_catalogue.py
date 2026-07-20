@@ -32,20 +32,26 @@ base = Path(racine)
 dossiers_artistes = DOSSIERS_ARTISTES_DEFAUT
 
 if st.button("Valider", type="primary"):
-    with st.spinner("Parcours de la bibliothèque…"):
-        try:
-            cat = scanner(base, dossiers_artistes)
-            st.session_state["catalogue"] = cat
-            st.session_state["catalogue_racine"] = str(base)
-            # Échantillon fixé au moment du scan (stable jusqu'au prochain Valider).
-            autres, categories = cat.blocs()
-            st.session_state["catalogue_apercu"] = (
-                random.sample(autres, min(5, len(autres))),
-                random.sample(categories, min(5, len(categories))),
-            )
-        except RacineIndisponible as e:
-            st.session_state.pop("catalogue", None)
-            st.error(str(e))
+    barre = st.progress(0.0, text="Parcours de la bibliothèque…")
+
+    def _prog(fait, total):
+        barre.progress(fait / total if total else 1.0, text=f"Artiste {fait}/{total}")
+
+    try:
+        cat = scanner(base, dossiers_artistes, progress=_prog)
+        barre.empty()
+        st.session_state["catalogue"] = cat
+        st.session_state["catalogue_racine"] = str(base)
+        # Échantillon fixé au moment du scan (stable jusqu'au prochain Valider).
+        autres, categories = cat.blocs()
+        st.session_state["catalogue_apercu"] = (
+            random.sample(autres, min(5, len(autres))),
+            random.sample(categories, min(5, len(categories))),
+        )
+    except RacineIndisponible as e:
+        barre.empty()
+        st.session_state.pop("catalogue", None)
+        st.error(str(e))
 
 cat = st.session_state.get("catalogue")
 if not cat:

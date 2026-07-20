@@ -80,9 +80,14 @@ def _classer(album: Path) -> AlbumSingle | None:
     )
 
 
-def analyser(racine: str | Path) -> Plan:
+def analyser(
+    racine: str | Path,
+    *,
+    progress: Callable[[int, int], None] | None = None,
+) -> Plan:
     """Parcourt racine/<artiste>/<album> et classe les dossiers single.
 
+    :param progress: rappelé après chaque artiste avec ``(traités, total)``.
     :return: Plan(a_traiter, a_verifier).
     """
     base = Path(racine)
@@ -91,7 +96,9 @@ def analyser(racine: str | Path) -> Plan:
 
     a_traiter: list[AlbumSingle] = []
     a_verifier: list[AlbumSingle] = []
-    for artiste in sorted(p for p in base.iterdir() if p.is_dir()):
+    artistes = sorted(p for p in base.iterdir() if p.is_dir())
+    total = len(artistes)
+    for i, artiste in enumerate(artistes, 1):
         for album in sorted(p for p in artiste.iterdir() if p.is_dir()):
             if album.name.lower() == NOM_DOSSIER_SINGLES.lower():
                 continue  # ne pas retraiter un dossier Singles existant
@@ -99,6 +106,8 @@ def analyser(racine: str | Path) -> Plan:
             if sa is None:
                 continue
             (a_verifier if sa.a_verifier else a_traiter).append(sa)
+        if progress:
+            progress(i, total)
     return Plan(a_traiter=a_traiter, a_verifier=a_verifier)
 
 

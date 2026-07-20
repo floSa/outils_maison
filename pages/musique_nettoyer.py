@@ -48,9 +48,14 @@ if not base.is_dir():
     st.stop()
 
 if st.button("Analyser", type="primary"):
-    with st.spinner("Analyse des noms…"):
-        st.session_state["nettoyer_plan"] = previsualiser_nettoyage(base)
-        st.session_state["nettoyer_racine"] = str(base)
+    barre = st.progress(0.0, text="Analyse des noms…")
+
+    def _prog(fait, total):
+        barre.progress(fait / total if total else 1.0, text=f"Artiste {fait}/{total}")
+
+    st.session_state["nettoyer_plan"] = previsualiser_nettoyage(base, progress=_prog)
+    st.session_state["nettoyer_racine"] = str(base)
+    barre.empty()
 
 plan = st.session_state.get("nettoyer_plan")
 if plan is not None:
