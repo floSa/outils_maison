@@ -13,20 +13,21 @@ st.caption(
     "catalogue de la bibliothèque municipale de Lyon (Part-Dieu)."
 )
 
-# --- Dépendance optionnelle (extra « scraping ») ------------------------------
+# --- Dépendance navigateur (Playwright) ---------------------------------------
 try:
     import playwright  # noqa: F401
 
     from tools.bm_lyon import verifier_disponibilites
 except ModuleNotFoundError:
     st.warning(
-        "Cet outil nécessite l'extra **scraping** (Playwright) :\n\n"
-        "```\nuv sync --extra scraping\nuv run playwright install chromium\n```",
+        "Cet outil nécessite Playwright et son navigateur :\n\n"
+        "```\nuv sync\nuv run playwright install chromium\n```",
         icon="📦",
     )
     st.stop()
 
-source = st.radio("Source", ["Coller du texte", "Fichier"], horizontal=True)
+col_source, col_btn = st.columns([4, 1], vertical_alignment="bottom")
+source = col_source.radio("Source", ["Coller du texte", "Fichier"], horizontal=True)
 
 texte = ""
 if source == "Coller du texte":
@@ -50,33 +51,43 @@ else:
 entrees = [e for e in parser_lignes(texte) if e.cote] if texte.strip() else []
 invalides = [e for e in parser_lignes(texte) if not e.cote] if texte.strip() else []
 
+# Bouton d'action, sur la même ligne que « Source ».
+valider = col_btn.button("Vérifier", type="primary", use_container_width=True)
+
 if texte.strip():
     st.write(f"{len(entrees)} ligne(s) exploitable(s).")
     for e in invalides:
         st.warning(f"Ligne sans cote reconnue (ignorée) : `{e.brut}`")
 
-if entrees and st.button(f"Vérifier {len(entrees)} cote(s)", type="primary"):
-    barre = st.progress(0.0, text="Démarrage du navigateur…")
-    journal = st.status("Vérification au catalogue…", expanded=True)
+if valider:
+    if not entrees:
+        st.session_state.pop("bm_resultats", None)
+        st.error(
+            "Aucune cote exploitable : colle des lignes « Artiste - Album - Cote » "
+            "ou choisis un fichier."
+        )
+    else:
+        barre = st.progress(0.0, text="Démarrage du navigateur…")
+        journal = st.status("Vérification au catalogue…", expanded=True)
 
-    def _progress(i, total):
-        barre.progress(i / total, text=f"Ligne {i}/{total}")
+        def _progress(i, total):
+            barre.progress(i / total, text=f"Ligne {i}/{total}")
 
-    with journal as statut:
-        try:
-            resultats = verifier_disponibilites(
-                [(e.artiste, e.album, e.cote) for e in entrees],
-                log=lambda m: st.write(m),
-                progress=_progress,
-            )
-            statut.update(label="Vérification terminée ✅", state="complete")
-        except Exception as exc:
-            statut.update(label="Échec ❌", state="error")
-            st.error(f"Erreur : {exc}")
-            st.stop()
+        with journal as statut:
+            try:
+                resultats = verifier_disponibilites(
+                    [(e.artiste, e.album, e.cote) for e in entrees],
+                    log=lambda m: st.write(m),
+                    progress=_progress,
+                )
+                statut.update(label="Vérification terminée ✅", state="complete")
+            except Exception as exc:
+                statut.update(label="Échec ❌", state="error")
+                st.error(f"Erreur : {exc}")
+                st.stop()
 
-    st.session_state["bm_resultats"] = resultats
-    barre.progress(1.0, text="Terminé")
+        st.session_state["bm_resultats"] = resultats
+        barre.progress(1.0, text="Terminé")
 
 resultats = st.session_state.get("bm_resultats")
 if resultats:
