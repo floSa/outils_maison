@@ -80,6 +80,20 @@ def test_stats_et_total(tmp_path):
     assert cat.total_albums == len(cat.lignes) == 6
 
 
+def test_dossier_artistes_insensible_casse(tmp_path):
+    # Le dossier réel est « __Autres » (A majuscule), le défaut « __autres ».
+    _dossier(tmp_path, "__Autres", "16 Horsepower", "Sackcloth 'n' Ashes")
+    _dossier(tmp_path, "__Autres", "-M-", "Mister Mystère")
+    cat = catalogue.scanner(tmp_path)
+    # Doit être lu en 3 niveaux : (artiste, album), jamais (__Autres, artiste).
+    assert ("16 Horsepower", "Sackcloth 'n' Ashes") in cat.lignes
+    assert ("-M-", "Mister Mystère") in cat.lignes
+    assert all(a != "__Autres" for a, _ in cat.lignes)
+    stats = {s.nom: s for s in cat.stats}
+    assert stats["__Autres"].est_dossier_artistes
+    assert stats["__Autres"].nb_artistes == 2
+
+
 def test_dossier_artistes_personnalise(tmp_path):
     _dossier(tmp_path, "__perso", "Artiste", "Album")
     cat = catalogue.scanner(tmp_path, dossiers_artistes=("__perso",))

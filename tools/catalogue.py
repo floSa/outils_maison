@@ -113,7 +113,9 @@ def scanner(
         (lecteur réseau non monté, partage déconnecté).
     """
     base = Path(racine)
-    artistes = set(dossiers_artistes)
+    # Comparaison insensible à la casse : le dossier réel peut s'appeler
+    # « __Autres » alors que le nom de référence est « __autres ».
+    artistes = {d.casefold() for d in dossiers_artistes}
     avertissements: list[str] = []
 
     # La racine elle-même est le seul point où l'inaccessibilité est fatale.
@@ -135,7 +137,7 @@ def scanner(
 
     for cat in categories:
         cat_path = Path(cat.path)
-        if cat.name in artistes:
+        if cat.name.casefold() in artistes:
             # 3 niveaux : catégorie → artistes → albums.
             nb_artistes = nb_albums = 0
             for artiste in _sous_dossiers(cat_path, avertissements):
