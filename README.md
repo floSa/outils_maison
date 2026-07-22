@@ -51,9 +51,7 @@ uv run streamlit run app.py
 | PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
-| Synthèse vocale | Lire un texte à voix haute (Kokoro, local, sans PyTorch) |
-| Traduction | Traduire un texte hors-ligne, 200 langues (NLLB-200, sans PyTorch) |
-| Transcription | Transcrire un audio/une vidéo en texte + sous-titres (Whisper, sans PyTorch) |
+| Voix & langues | Lire un texte à voix haute (Kokoro) · Traduire, 200 langues (NLLB-200) · Transcrire un audio/vidéo + sous-titres (Whisper) — tout en local, sans PyTorch |
 | Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune

@@ -13,7 +13,7 @@ stricte UI / logique**.
 - L'**interface** vit dans [`pages/`](../pages/) : une page Streamlit par outil, qui ne
   fait que collecter des chemins/options, appeler `tools/`, puis afficher le résultat.
 - Le **point d'entrée** [`app.py`](../app.py) déclare la navigation via `st.navigation`
-  / `st.Page` (11 rubriques + Accueil).
+  / `st.Page` (9 rubriques + Accueil).
 
 Tout traite des **dossiers/fichiers locaux** (chemins saisis en clair, ex. `M:/musiques`).
 Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge un site public.
