@@ -195,8 +195,41 @@ def _charger(gpu: bool):
     return _moteurs[gpu]
 
 
+def _preparer_lignes(texte: str) -> tuple[list[str], list[str], list[list[int]]]:
+    """Prépare une traduction **ligne par ligne** (préserve la mise en page).
+
+    Retourne ``(lignes, morceaux, plan)`` : ``morceaux`` est la liste à plat des
+    segments à traduire ; ``plan[i]`` donne les indices des morceaux de la ligne
+    ``i`` (liste vide pour une ligne vide). Reconstruire avec :func:`_reconstituer`.
+    """
+    lignes = texte.split("\n")
+    morceaux: list[str] = []
+    plan: list[list[int]] = []
+    for ligne in lignes:
+        if not ligne.strip():  # ligne vide : préservée telle quelle
+            plan.append([])
+            continue
+        indices = []
+        for m in decouper_texte(ligne):  # découpe une ligne très longue
+            indices.append(len(morceaux))
+            morceaux.append(m)
+        plan.append(indices)
+    return lignes, morceaux, plan
+
+
+def _reconstituer(plan: list[list[int]], traduits: list[str]) -> str:
+    """Recolle les morceaux traduits **en préservant les sauts de ligne** d'origine."""
+    return "\n".join(
+        " ".join(traduits[i] for i in indices) if indices else ""
+        for indices in plan
+    )
+
+
 def traduire(texte: str, source: str, cible: str, gpu: bool = False) -> str:
     """Traduit ``texte`` de la langue ``source`` vers ``cible`` (codes FLORES-200).
+
+    La **mise en page** (retours à la ligne, lignes vides) est préservée : la
+    traduction se fait ligne par ligne.
 
     :param source: code langue source, ex. ``eng_Latn`` (cf. :data:`LANGUES`).
     :param cible: code langue cible, ex. ``fra_Latn``.
@@ -207,11 +240,12 @@ def traduire(texte: str, source: str, cible: str, gpu: bool = False) -> str:
         raise FileNotFoundError(
             "Modèle de traduction absent : lancez telecharger_modele() d'abord."
         )
-    morceaux = decouper_texte(texte)
+    if source == cible or not texte.strip():
+        return texte
+
+    lignes, morceaux, plan = _preparer_lignes(texte)
     if not morceaux:
-        return ""
-    if source == cible:
-        return texte.strip()
+        return texte
 
     translator, tokenizer = _charger(gpu)
     tokenizer.src_lang = source
@@ -221,11 +255,12 @@ def traduire(texte: str, source: str, cible: str, gpu: bool = False) -> str:
         sources, target_prefix=[[cible]] * len(sources), beam_size=4
     )
 
-    sorties: list[str] = []
+    traduits: list[str] = []
     for res in resultats:
         tokens = list(res.hypotheses[0])
         if tokens and tokens[0] == cible:  # retire le token de langue cible
             tokens = tokens[1:]
         ids = tokenizer.convert_tokens_to_ids(tokens)
-        sorties.append(tokenizer.decode(ids, skip_special_tokens=True).strip())
-    return " ".join(s for s in sorties if s)
+        traduits.append(tokenizer.decode(ids, skip_special_tokens=True).strip())
+
+    return _reconstituer(plan, traduits)

@@ -47,6 +47,28 @@ def test_decouper_texte_respecte_la_limite():
     assert all(len(m) <= 80 for m in morceaux)
 
 
+def test_preparer_lignes_preserve_la_structure():
+    texte = "Ligne un\n\nLigne trois"
+    lignes, morceaux, plan = traduction._preparer_lignes(texte)
+    assert len(lignes) == 3
+    assert morceaux == ["Ligne un", "Ligne trois"]
+    # Ligne 0 -> morceau 0 ; ligne 1 vide -> [] ; ligne 2 -> morceau 1.
+    assert plan == [[0], [], [1]]
+
+
+def test_reconstituer_preserve_les_sauts_de_ligne():
+    plan = [[0], [], [1]]
+    traduits = ["Line one", "Line three"]
+    assert traduction._reconstituer(plan, traduits) == "Line one\n\nLine three"
+
+
+def test_traduction_identite_conserve_la_mise_en_page():
+    # Reconstruire à partir des morceaux d'origine redonne le texte, ligne à ligne.
+    texte = "Bonjour\nAu revoir\n\nFin"
+    _, morceaux, plan = traduction._preparer_lignes(texte)
+    assert traduction._reconstituer(plan, morceaux) == texte
+
+
 def test_traduire_sans_modele_leve(tmp_path, monkeypatch):
     monkeypatch.setenv("OUTILS_TRADUCTION_DIR", str(tmp_path))
     with pytest.raises(FileNotFoundError):
