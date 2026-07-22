@@ -13,10 +13,12 @@ stricte UI / logique**.
 - L'**interface** vit dans [`pages/`](../pages/) : une page Streamlit par outil, qui ne
   fait que collecter des chemins/options, appeler `tools/`, puis afficher le résultat.
 - Le **point d'entrée** [`app.py`](../app.py) déclare la navigation via `st.navigation`
-  / `st.Page` (7 rubriques + Accueil).
+  / `st.Page` (9 rubriques + Accueil).
 
 Tout traite des **dossiers/fichiers locaux** (chemins saisis en clair, ex. `M:/musiques`).
 Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge un site public.
+L'outil de **synthèse vocale** télécharge son modèle une seule fois depuis GitHub, puis
+fonctionne hors-ligne.
 
 ---
 
@@ -35,8 +37,9 @@ Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge u
 | [`data.py`](../tools/data.py) | Conversions CSV / Excel / JSON, nettoyage de lignes | `pandas`, `openpyxl` |
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
 | [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
+| [`tts.py`](../tools/tts.py) | Synthèse vocale locale (voix, vitesse, CPU/GPU), téléchargement du modèle | `kokoro-onnx`, `onnxruntime`, `numpy` |
 
-> Les 40 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 41 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---
@@ -54,6 +57,7 @@ Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge u
 | Progression | tqdm | `>=4.67` |
 | Vision | opencv-python | `>=4.10` |
 | Scraping | Playwright | `>=1.40` |
+| Synthèse vocale | kokoro-onnx · onnxruntime (modèle Kokoro-82M) | `>=0.4` · CPU (extra `gpu`) |
 | Runtime | Python | `>=3.12` |
 | Gestion projet | uv | `uv.lock` présent |
 
@@ -109,7 +113,8 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Journal d'annulation JSON | `annuler()` restaure les noms/emplacements d'origine | `.renommage_undo.json`, `.dedup_undo.json` |
 | Non-écrasement | Une cible déjà existante est ignorée, jamais écrasée | `files.appliquer()` |
 | ffmpeg embarqué | Pas de binaire système requis ni de PATH à faire confiance | `ffmpeg_utils.py` |
-| Imports paresseux des extras | OpenCV / Playwright chargés seulement à l'usage | `fonds.py`, `bm_lyon.py` |
+| Imports paresseux des extras | OpenCV / Playwright / Kokoro chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py` |
+| Téléchargement atomique du modèle TTS | Écrit dans `*.part` puis renomme : jamais de modèle à moitié écrit | `tts.py` |
 
 ---
 
@@ -134,6 +139,13 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
   l'album précis est mal indexé au catalogue ; matching tolérant (sous-ensemble de nom,
   découpe sur le 1er `" - "`). *Limite* : dépend du HTML du site, fragile aux
   changements (cf. docstring de [`bm_lyon.py`](../tools/bm_lyon.py)).
+- **Synthèse vocale par Kokoro (via `kokoro-onnx`)** **plutôt que** Piper, Chatterbox ou
+  XTTS, **parce que** Kokoro donne la voix la plus naturelle tout en tournant sur CPU via
+  `onnxruntime` **sans PyTorch** (Chatterbox/XTTS imposent `torch` et visent le GPU), et
+  que la phonémisation française passe par espeak-ng **embarqué** (`espeakng-loader`,
+  aucune installation système). *Limite* : Kokoro n'offre qu'**une** voix française
+  (`ff_siwis`, grade B-) ; pour de la variété de voix FR, Piper serait le complément.
+  Le modèle (~340 Mo) n'est pas versionné : il est téléchargé au premier usage.
 
 ---
 
@@ -145,3 +157,4 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Chemins | Saisis en clair, orientés Windows (`M:/…`) | OK pour usage perso ; pas de validation forte |
 | `imageio-ffmpeg` | Dépendance transitive non déclarée | La fixer en dépendance directe |
 | Tests des pages | Smoke-test de rendu à entrées vides uniquement | Ajouter des tests de bout en bout sur données factices si besoin |
+| Synthèse vocale (français) | Une seule voix (`ff_siwis`, grade B-) ; modèle ~340 Mo à télécharger au 1er usage | Ajouter Piper en second moteur si plusieurs voix FR deviennent nécessaires |

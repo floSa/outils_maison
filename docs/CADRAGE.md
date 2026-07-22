@@ -13,6 +13,8 @@ collection d'utilitaires personnels pour manipuler fichiers, médias et catalogu
    statistiques, comparaison, arborescence → Excel), avec prévisualisation et annulation.
 3. **Gérer deux cas « catalogue » spécifiques** : tri de cotes de bibliothèque et
    vérification de disponibilité au catalogue de la BM de Lyon.
+4. **Lire un texte à voix haute** en local (synthèse vocale open-source, voix et
+   vitesse réglables), sans service tiers ni PyTorch.
 
 ---
 
@@ -66,6 +68,7 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 | Médias | moviepy · ffmpeg embarqué | MIT · LGPL/GPL (binaire) |
 | Vision | opencv-python | Apache-2.0 |
 | Scraping | Playwright | Apache-2.0 |
+| Synthèse vocale | kokoro-onnx · onnxruntime (modèle Kokoro-82M) | MIT · MIT (modèle Apache-2.0) |
 | Ce projet | Code applicatif | MIT — Copyright (c) 2026 floSa |
 
 ---
@@ -79,6 +82,9 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
   seul `uv sync` installe tout (le navigateur Playwright se télécharge à part).
 - Prévisualiser puis appliquer, avec journal d'annulation, pour toute opération
   destructive sur les fichiers.
+- Synthèse vocale par **Kokoro** (onnxruntime, sans PyTorch, espeak-ng embarqué)
+  plutôt que par un moteur à PyTorch/GPU : reste local et léger. Justification
+  contrastive en [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).
 
 (Justifications contrastives détaillées en
 [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).)
@@ -92,8 +98,9 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 
 - **Logique** : un fichier de test par module métier (`tests/test_audio.py`,
   `test_images.py`, `test_pdf.py`, `test_files.py`, `test_data.py`, `test_fonds.py`,
-  `test_biblio.py`, `test_musique.py`, `test_bm_lyon.py`) — le matching BM Lyon est
-  testé **sans navigateur** (fonctions pures isolées de Playwright).
+  `test_biblio.py`, `test_musique.py`, `test_bm_lyon.py`, `test_tts.py`) — le matching
+  BM Lyon est testé **sans navigateur** (fonctions pures isolées de Playwright) et la
+  synthèse vocale **sans télécharger le modèle** (découpage, encodage WAV, garde-fous).
 - **Rendu** : `tests/test_pages.py` charge chaque page via `streamlit.testing.v1.AppTest`
   et vérifie qu'elle se rend sans exception à entrées vides (smoke-test).
 - Lancement : `uv run pytest`.

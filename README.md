@@ -51,6 +51,7 @@ uv run streamlit run app.py
 | PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
+| Synthèse vocale | Lire un texte à voix haute (Kokoro, local, sans PyTorch) |
 | Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
@@ -58,6 +59,11 @@ uv run streamlit run app.py
 >
 > La vérification BM Lyon nécessite en plus le navigateur Playwright :
 > `uv run playwright install chromium`.
+>
+> La **synthèse vocale** (Kokoro) tourne en local sur CPU via `onnxruntime`
+> (aucun PyTorch, espeak-ng embarqué). Le modèle (~340 Mo) se télécharge **au
+> premier usage** depuis la page, puis est mis en cache. Accélération GPU NVIDIA
+> facultative : `uv sync --extra gpu`.
 
 ## Tests
 
@@ -84,6 +90,7 @@ outils_maison/
 │   ├── pdf.py          #   extraire, fusionner, pages, images ↔ PDF
 │   ├── files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
 │   ├── data.py         #   conversions CSV / Excel / JSON
+│   ├── tts.py          #   synthèse vocale locale (Kokoro / onnxruntime)
 │   ├── biblio.py       #   tri de cotes de bibliothèque
 │   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (scraping)
 ├── pages/              # une page Streamlit par outil
@@ -118,4 +125,8 @@ Licences usuelles des briques utilisées — **à vérifier selon la version ins
 | tqdm | Barres de progression | MPL-2.0 / MIT |
 | opencv-python | Vision (SIFT/RANSAC) | Apache-2.0 |
 | Playwright | Navigateur pour scraping | Apache-2.0 |
+| kokoro-onnx | Synthèse vocale (moteur ONNX) | MIT |
+| Kokoro-82M | Modèle de voix (téléchargé) | Apache-2.0 |
+| onnxruntime | Exécution du modèle (CPU/GPU) | MIT |
+| espeakng-loader / phonemizer-fork | Phonémisation (espeak-ng embarqué) | GPL-3.0 (espeak-ng) |
 | **Ce projet** | Code applicatif | MIT — Copyright (c) 2026 floSa |
