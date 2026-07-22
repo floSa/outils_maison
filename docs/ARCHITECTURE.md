@@ -13,12 +13,12 @@ stricte UI / logique**.
 - L'**interface** vit dans [`pages/`](../pages/) : une page Streamlit par outil, qui ne
   fait que collecter des chemins/options, appeler `tools/`, puis afficher le résultat.
 - Le **point d'entrée** [`app.py`](../app.py) déclare la navigation via `st.navigation`
-  / `st.Page` (9 rubriques + Accueil).
+  / `st.Page` (10 rubriques + Accueil).
 
 Tout traite des **dossiers/fichiers locaux** (chemins saisis en clair, ex. `M:/musiques`).
 Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge un site public.
-L'outil de **synthèse vocale** télécharge son modèle une seule fois depuis GitHub, puis
-fonctionne hors-ligne.
+Les outils de **synthèse vocale** et de **traduction** téléchargent chacun leur modèle
+une seule fois (GitHub / HuggingFace), puis fonctionnent hors-ligne.
 
 ---
 
@@ -38,8 +38,9 @@ fonctionne hors-ligne.
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
 | [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
 | [`tts.py`](../tools/tts.py) | Synthèse vocale locale (voix, vitesse, CPU/GPU), téléchargement du modèle | `kokoro-onnx`, `onnxruntime`, `numpy` |
+| [`traduction.py`](../tools/traduction.py) | Traduction hors-ligne (200 langues, CPU/GPU), téléchargement du modèle | `ctranslate2`, `transformers` (tokenizer), `sentencepiece` |
 
-> Les 41 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 42 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---
@@ -58,6 +59,7 @@ fonctionne hors-ligne.
 | Vision | opencv-python | `>=4.10` |
 | Scraping | Playwright | `>=1.40` |
 | Synthèse vocale | kokoro-onnx · onnxruntime (modèle Kokoro-82M) | `>=0.4` · CPU (extra `gpu`) |
+| Traduction | ctranslate2 · transformers (tokenizer) · sentencepiece (modèle NLLB-200 600M) | `>=4.0` · `>=4.40` · `>=0.2` |
 | Runtime | Python | `>=3.12` |
 | Gestion projet | uv | `uv.lock` présent |
 
@@ -113,8 +115,8 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Journal d'annulation JSON | `annuler()` restaure les noms/emplacements d'origine | `.renommage_undo.json`, `.dedup_undo.json` |
 | Non-écrasement | Une cible déjà existante est ignorée, jamais écrasée | `files.appliquer()` |
 | ffmpeg embarqué | Pas de binaire système requis ni de PATH à faire confiance | `ffmpeg_utils.py` |
-| Imports paresseux des extras | OpenCV / Playwright / Kokoro chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py` |
-| Téléchargement atomique du modèle TTS | Écrit dans `*.part` puis renomme : jamais de modèle à moitié écrit | `tts.py` |
+| Imports paresseux des extras | OpenCV / Playwright / Kokoro / CTranslate2 chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py`, `traduction.py` |
+| Téléchargement atomique des modèles | Écrit dans `*.part` puis renomme : jamais de modèle à moitié écrit | `tts.py`, `traduction.py` |
 
 ---
 
@@ -146,6 +148,16 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
   aucune installation système). *Limite* : Kokoro n'offre qu'**une** voix française
   (`ff_siwis`, grade B-) ; pour de la variété de voix FR, Piper serait le complément.
   Le modèle (~340 Mo) n'est pas versionné : il est téléchargé au premier usage.
+- **Traduction par NLLB-200 600M via CTranslate2** **plutôt que** par Argos Translate,
+  **parce qu'**Argos tire **PyTorch** en dépendance transitive (via `stanza`) et fait
+  gonfler l'environnement à **~6 Go** — inacceptable au regard de la charte « léger,
+  sans PyTorch ». CTranslate2, lui, est torch-free (inférence CPU quantifiée int8) et
+  `transformers` n'est utilisé **que** comme tokenizer. **Plutôt que** OPUS-MT par paire,
+  **parce qu'**un **seul** modèle (~623 Mo) couvre **200 langues** — pas de multi-modèles
+  ni de pivot. *Limites* : le modèle NLLB est sous licence **CC-BY-NC** (usage **non
+  commercial**) ; la variante 600M est un compromis (la 1.3B traduit mieux mais pèse ~3×
+  plus) ; qualité variable sur les langues peu dotées. *Alternatives* : OPUS-MT (plus
+  léger pour une seule paire), NLLB-1.3B (meilleure qualité, plus lourd).
 
 ---
 
@@ -158,3 +170,4 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | `imageio-ffmpeg` | Dépendance transitive non déclarée | La fixer en dépendance directe |
 | Tests des pages | Smoke-test de rendu à entrées vides uniquement | Ajouter des tests de bout en bout sur données factices si besoin |
 | Synthèse vocale (français) | Une seule voix (`ff_siwis`, grade B-) ; modèle ~340 Mo à télécharger au 1er usage | Ajouter Piper en second moteur si plusieurs voix FR deviennent nécessaires |
+| Traduction | Modèle NLLB **CC-BY-NC** (non commercial) ; 600M (compromis qualité) ; ~623 Mo au 1er usage | Passer à NLLB-1.3B ou OPUS-MT selon le besoin qualité/poids |

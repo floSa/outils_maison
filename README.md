@@ -52,6 +52,7 @@ uv run streamlit run app.py
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | Synthèse vocale | Lire un texte à voix haute (Kokoro, local, sans PyTorch) |
+| Traduction | Traduire un texte hors-ligne, 200 langues (NLLB-200, sans PyTorch) |
 | Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
@@ -64,6 +65,11 @@ uv run streamlit run app.py
 > (aucun PyTorch, espeak-ng embarqué). Le modèle (~340 Mo) se télécharge **au
 > premier usage** depuis la page, puis est mis en cache. Accélération GPU NVIDIA
 > facultative : `uv sync --extra gpu`.
+>
+> La **traduction** (NLLB-200) tourne en local via `ctranslate2` (aucun PyTorch ;
+> `transformers` sert seulement de tokenizer). Le modèle (~600 Mo, 200 langues) se
+> télécharge **au premier usage**, puis est mis en cache. Modèle NLLB sous licence
+> **CC-BY-NC** (usage non commercial).
 
 ## Tests
 
@@ -91,6 +97,7 @@ outils_maison/
 │   ├── files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
 │   ├── data.py         #   conversions CSV / Excel / JSON
 │   ├── tts.py          #   synthèse vocale locale (Kokoro / onnxruntime)
+│   ├── traduction.py   #   traduction hors-ligne (NLLB-200 / CTranslate2)
 │   ├── biblio.py       #   tri de cotes de bibliothèque
 │   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (scraping)
 ├── pages/              # une page Streamlit par outil
@@ -129,4 +136,8 @@ Licences usuelles des briques utilisées — **à vérifier selon la version ins
 | Kokoro-82M | Modèle de voix (téléchargé) | Apache-2.0 |
 | onnxruntime | Exécution du modèle (CPU/GPU) | MIT |
 | espeakng-loader / phonemizer-fork | Phonémisation (espeak-ng embarqué) | GPL-3.0 (espeak-ng) |
+| ctranslate2 | Traduction (moteur d'inférence) | MIT |
+| transformers | Tokenizer de traduction | Apache-2.0 |
+| sentencepiece | Tokenisation sous-mots | Apache-2.0 |
+| NLLB-200 (distillé 600M) | Modèle de traduction (téléchargé) | **CC-BY-NC-4.0** (non commercial) |
 | **Ce projet** | Code applicatif | MIT — Copyright (c) 2026 floSa |

@@ -15,6 +15,8 @@ collection d'utilitaires personnels pour manipuler fichiers, médias et catalogu
    vérification de disponibilité au catalogue de la BM de Lyon.
 4. **Lire un texte à voix haute** en local (synthèse vocale open-source, voix et
    vitesse réglables), sans service tiers ni PyTorch.
+5. **Traduire un texte** hors-ligne (anglais → français et ~200 langues), sans
+   service tiers ni PyTorch.
 
 ---
 
@@ -69,6 +71,7 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 | Vision | opencv-python | Apache-2.0 |
 | Scraping | Playwright | Apache-2.0 |
 | Synthèse vocale | kokoro-onnx · onnxruntime (modèle Kokoro-82M) | MIT · MIT (modèle Apache-2.0) |
+| Traduction | ctranslate2 · transformers (modèle NLLB-200) | MIT · Apache-2.0 (modèle **CC-BY-NC**) |
 | Ce projet | Code applicatif | MIT — Copyright (c) 2026 floSa |
 
 ---
