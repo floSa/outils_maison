@@ -13,12 +13,12 @@ stricte UI / logique**.
 - L'**interface** vit dans [`pages/`](../pages/) : une page Streamlit par outil, qui ne
   fait que collecter des chemins/options, appeler `tools/`, puis afficher le résultat.
 - Le **point d'entrée** [`app.py`](../app.py) déclare la navigation via `st.navigation`
-  / `st.Page` (10 rubriques + Accueil).
+  / `st.Page` (11 rubriques + Accueil).
 
 Tout traite des **dossiers/fichiers locaux** (chemins saisis en clair, ex. `M:/musiques`).
 Aucune donnée ne sort de la machine, sauf l'outil « BM Lyon » qui interroge un site public.
-Les outils de **synthèse vocale** et de **traduction** téléchargent chacun leur modèle
-une seule fois (GitHub / HuggingFace), puis fonctionnent hors-ligne.
+Les outils de **synthèse vocale**, de **traduction** et de **transcription** téléchargent
+chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hors-ligne.
 
 ---
 
@@ -39,8 +39,9 @@ une seule fois (GitHub / HuggingFace), puis fonctionnent hors-ligne.
 | [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
 | [`tts.py`](../tools/tts.py) | Synthèse vocale locale (voix, vitesse, CPU/GPU), téléchargement du modèle | `kokoro-onnx`, `onnxruntime`, `numpy` |
 | [`traduction.py`](../tools/traduction.py) | Traduction hors-ligne (200 langues, CPU/GPU), téléchargement du modèle | `ctranslate2`, `transformers` (tokenizer), `sentencepiece` |
+| [`transcription.py`](../tools/transcription.py) | Transcription audio/vidéo → texte + sous-titres (CPU/GPU), téléchargement du modèle | `faster-whisper` (CTranslate2), `av` |
 
-> Les 42 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 43 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---
@@ -60,6 +61,7 @@ une seule fois (GitHub / HuggingFace), puis fonctionnent hors-ligne.
 | Scraping | Playwright | `>=1.40` |
 | Synthèse vocale | kokoro-onnx · onnxruntime (modèle Kokoro-82M) | `>=0.4` · CPU (extra `gpu`) |
 | Traduction | ctranslate2 · transformers (tokenizer) · sentencepiece (modèle NLLB-200 600M) | `>=4.0` · `>=4.40` · `>=0.2` |
+| Transcription | faster-whisper (CTranslate2) · av (modèles Whisper) | `>=1.1` |
 | Runtime | Python | `>=3.12` |
 | Gestion projet | uv | `uv.lock` présent |
 
@@ -115,7 +117,7 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Journal d'annulation JSON | `annuler()` restaure les noms/emplacements d'origine | `.renommage_undo.json`, `.dedup_undo.json` |
 | Non-écrasement | Une cible déjà existante est ignorée, jamais écrasée | `files.appliquer()` |
 | ffmpeg embarqué | Pas de binaire système requis ni de PATH à faire confiance | `ffmpeg_utils.py` |
-| Imports paresseux des extras | OpenCV / Playwright / Kokoro / CTranslate2 chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py`, `traduction.py` |
+| Imports paresseux des extras | OpenCV / Playwright / Kokoro / CTranslate2 chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py`, `traduction.py`, `transcription.py` |
 | Téléchargement atomique des modèles | Écrit dans `*.part` puis renomme : jamais de modèle à moitié écrit | `tts.py`, `traduction.py` |
 
 ---
@@ -158,6 +160,15 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
   commercial**) ; la variante 600M est un compromis (la 1.3B traduit mieux mais pèse ~3×
   plus) ; qualité variable sur les langues peu dotées. *Alternatives* : OPUS-MT (plus
   léger pour une seule paire), NLLB-1.3B (meilleure qualité, plus lourd).
+- **Transcription par faster-whisper (Whisper sur CTranslate2)** **plutôt que**
+  `openai-whisper` ou WhisperX, **parce que** ces derniers tirent **PyTorch**, alors que
+  faster-whisper réutilise **CTranslate2** — déjà présent (traduction) — donc torch-free,
+  CPU int8, ~2× plus rapide. **Plutôt que** whisper.cpp, **parce que** l'intégration
+  Python est directe et `av` décode nativement audio **et** vidéo. Le modèle par défaut
+  est **large-v3-turbo** (qualité quasi maximale, ~6× plus rapide que large-v3).
+  *Limites* : sur CPU, les gros modèles restent lents sur un long fichier ; pas de
+  diariation (qui parle) — WhisperX le ferait mais impose torch. *Alternatives* : modèles
+  plus petits (`small`/`medium`) pour la vitesse, WhisperX si la diariation devient utile.
 
 ---
 
@@ -171,3 +182,4 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Tests des pages | Smoke-test de rendu à entrées vides uniquement | Ajouter des tests de bout en bout sur données factices si besoin |
 | Synthèse vocale (français) | Une seule voix (`ff_siwis`, grade B-) ; modèle ~340 Mo à télécharger au 1er usage | Ajouter Piper en second moteur si plusieurs voix FR deviennent nécessaires |
 | Traduction | Modèle NLLB **CC-BY-NC** (non commercial) ; 600M (compromis qualité) ; ~623 Mo au 1er usage | Passer à NLLB-1.3B ou OPUS-MT selon le besoin qualité/poids |
+| Transcription | Lente sur CPU pour les gros modèles / longs fichiers ; pas de diariation | Modèle `small`/`medium` pour la vitesse ; WhisperX (torch) si diariation requise |

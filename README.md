@@ -53,6 +53,7 @@ uv run streamlit run app.py
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | Synthèse vocale | Lire un texte à voix haute (Kokoro, local, sans PyTorch) |
 | Traduction | Traduire un texte hors-ligne, 200 langues (NLLB-200, sans PyTorch) |
+| Transcription | Transcrire un audio/une vidéo en texte + sous-titres (Whisper, sans PyTorch) |
 | Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
@@ -70,6 +71,11 @@ uv run streamlit run app.py
 > `transformers` sert seulement de tokenizer). Le modèle (~600 Mo, 200 langues) se
 > télécharge **au premier usage**, puis est mis en cache. Modèle NLLB sous licence
 > **CC-BY-NC** (usage non commercial).
+>
+> La **transcription** (Whisper via `faster-whisper`) tourne en local sur
+> CTranslate2 (aucun PyTorch ; `av` décode audio et vidéo). Le modèle choisi
+> (jusqu'à ~1,6 Go pour `large-v3-turbo`) se télécharge **au premier usage**,
+> puis est mis en cache. Modèle et moteur sous licence **MIT**.
 
 ## Tests
 
@@ -98,6 +104,7 @@ outils_maison/
 │   ├── data.py         #   conversions CSV / Excel / JSON
 │   ├── tts.py          #   synthèse vocale locale (Kokoro / onnxruntime)
 │   ├── traduction.py   #   traduction hors-ligne (NLLB-200 / CTranslate2)
+│   ├── transcription.py #  transcription audio/vidéo (Whisper / faster-whisper)
 │   ├── biblio.py       #   tri de cotes de bibliothèque
 │   └── bm_lyon.py      #   disponibilité au catalogue BM Lyon (scraping)
 ├── pages/              # une page Streamlit par outil
@@ -140,4 +147,7 @@ Licences usuelles des briques utilisées — **à vérifier selon la version ins
 | transformers | Tokenizer de traduction | Apache-2.0 |
 | sentencepiece | Tokenisation sous-mots | Apache-2.0 |
 | NLLB-200 (distillé 600M) | Modèle de traduction (téléchargé) | **CC-BY-NC-4.0** (non commercial) |
+| faster-whisper | Transcription (runtime CTranslate2) | MIT |
+| av (PyAV) | Décodage audio/vidéo (ffmpeg) | BSD-3-Clause |
+| Whisper (modèles) | Modèle de transcription (téléchargé) | MIT |
 | **Ce projet** | Code applicatif | MIT — Copyright (c) 2026 floSa |

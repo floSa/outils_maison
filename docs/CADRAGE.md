@@ -17,6 +17,8 @@ collection d'utilitaires personnels pour manipuler fichiers, médias et catalogu
    vitesse réglables), sans service tiers ni PyTorch.
 5. **Traduire un texte** hors-ligne (anglais → français et ~200 langues), sans
    service tiers ni PyTorch.
+6. **Transcrire un audio/une vidéo** en texte et sous-titres, en local, sans
+   service tiers ni PyTorch.
 
 ---
 
