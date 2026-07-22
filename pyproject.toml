@@ -22,7 +22,15 @@ dependencies = [
     # Vérification de disponibilité au catalogue BM Lyon (scraping).
     # Le navigateur s'installe séparément :  uv run playwright install chromium
     "playwright>=1.40",
+    # Synthèse vocale locale (Kokoro, Apache-2.0) sur CPU via onnxruntime, sans
+    # PyTorch. Embarque espeak-ng (via espeakng-loader) pour le français : aucune
+    # installation système. Le modèle (~340 Mo) se télécharge au 1er usage.
+    "kokoro-onnx>=0.4",
 ]
+
+[project.optional-dependencies]
+# Accélération GPU NVIDIA facultative :  uv sync --extra gpu
+gpu = ["onnxruntime-gpu>=1.20"]
 
 [dependency-groups]
 dev = [

@@ -64,6 +64,9 @@ sections = {
         page("data_convertir.py", "Convertir un tableau", "🔀"),
         page("data_lignes.py", "Nettoyer des lignes", "📃"),
     ],
+    "🗣️ Synthèse vocale": [
+        page("tts_lire.py", "Lire du texte à voix haute", "🔊"),
+    ],
     "🎼 Bibliothèque perso": [
         page("musique_catalogue.py", "Catalogue de la bibliothèque", "🎵"),
         page("musique_nettoyer.py", "Nettoyer la bibliothèque", "🧼"),
