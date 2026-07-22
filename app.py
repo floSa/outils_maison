@@ -67,6 +67,9 @@ sections = {
     "🗣️ Synthèse vocale": [
         page("tts_lire.py", "Lire du texte à voix haute", "🔊"),
     ],
+    "🌐 Traduction": [
+        page("traduction_traduire.py", "Traduire un texte", "🌐"),
+    ],
     "🎼 Bibliothèque perso": [
         page("musique_catalogue.py", "Catalogue de la bibliothèque", "🎵"),
         page("musique_nettoyer.py", "Nettoyer la bibliothèque", "🧼"),

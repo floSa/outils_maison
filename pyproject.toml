@@ -26,6 +26,13 @@ dependencies = [
     # PyTorch. Embarque espeak-ng (via espeakng-loader) pour le français : aucune
     # installation système. Le modèle (~340 Mo) se télécharge au 1er usage.
     "kokoro-onnx>=0.4",
+    # Traduction hors-ligne (NLLB-200 distillé 600M) via CTranslate2 sur CPU,
+    # sans PyTorch : ctranslate2 fait l'inférence, transformers ne sert que de
+    # tokenizer. Le modèle (~600 Mo, int8) se télécharge au 1er usage.
+    "ctranslate2>=4.0",
+    "transformers>=4.40",
+    "sentencepiece>=0.2",
+    "huggingface-hub>=0.24",
 ]
 
 [project.optional-dependencies]
