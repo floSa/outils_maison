@@ -70,6 +70,9 @@ sections = {
     "🌐 Traduction": [
         page("traduction_traduire.py", "Traduire un texte", "🌐"),
     ],
+    "🎙️ Transcription": [
+        page("transcription_transcrire.py", "Transcrire un audio / une vidéo", "🎙️"),
+    ],
     "🎼 Bibliothèque perso": [
         page("musique_catalogue.py", "Catalogue de la bibliothèque", "🎵"),
         page("musique_nettoyer.py", "Nettoyer la bibliothèque", "🧼"),

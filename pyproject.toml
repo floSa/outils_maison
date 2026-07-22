@@ -33,6 +33,10 @@ dependencies = [
     "transformers>=4.40",
     "sentencepiece>=0.2",
     "huggingface-hub>=0.24",
+    # Transcription audio/vidéo -> texte (Whisper) via CTranslate2, sans PyTorch.
+    # `av` (PyAV) embarque ffmpeg pour décoder audio et vidéo. Le modèle se
+    # télécharge au 1er usage.
+    "faster-whisper>=1.1",
 ]
 
 [project.optional-dependencies]
