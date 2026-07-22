@@ -37,10 +37,6 @@ if tts.gpu_disponible():
     materiel = st.radio("Matériel", ["CPU", "GPU"], horizontal=True)
 else:
     materiel = "CPU"
-    st.caption(
-        "GPU non détecté — synthèse sur CPU. "
-        "Pour l'activer : `uv sync --extra gpu` (carte NVIDIA)."
-    )
 
 # --- Modèle : téléchargement au premier usage ------------------------------ #
 if not tts.modele_present():

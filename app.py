@@ -64,13 +64,9 @@ sections = {
         page("data_convertir.py", "Convertir un tableau", "🔀"),
         page("data_lignes.py", "Nettoyer des lignes", "📃"),
     ],
-    "🗣️ Synthèse vocale": [
+    "🗣️ Voix & langues": [
         page("tts_lire.py", "Lire du texte à voix haute", "🔊"),
-    ],
-    "🌐 Traduction": [
         page("traduction_traduire.py", "Traduire un texte", "🌐"),
-    ],
-    "🎙️ Transcription": [
         page("transcription_transcrire.py", "Transcrire un audio / une vidéo", "🎙️"),
     ],
     "🎼 Bibliothèque perso": [
