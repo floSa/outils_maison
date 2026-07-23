@@ -49,7 +49,7 @@ uv run streamlit run app.py
 | Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran · Auditer les fonds triés |
 | Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
 | PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
-| Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel |
+| Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel · HTML → Markdown (captures SingleFile) |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | Voix & langues | Lire un texte à voix haute (Kokoro) · Traduire, 200 langues (NLLB-200) · Transcrire un audio/vidéo + sous-titres (Whisper) — tout en local, sans PyTorch |
 | Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |

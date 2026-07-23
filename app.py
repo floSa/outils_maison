@@ -59,6 +59,7 @@ sections = {
         page("files_stats.py", "Statistiques", "📊"),
         page("files_comparer.py", "Comparer deux dossiers", "🔀"),
         page("files_arborescence.py", "Arborescence → Excel", "🌳"),
+        page("files_html_md.py", "HTML → Markdown", "🌐"),
     ],
     "🔤 Données": [
         page("data_convertir.py", "Convertir un tableau", "🔀"),

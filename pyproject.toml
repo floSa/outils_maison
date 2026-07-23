@@ -37,6 +37,13 @@ dependencies = [
     # `av` (PyAV) embarque ffmpeg pour décoder audio et vidéo. Le modèle se
     # télécharge au 1er usage.
     "faster-whisper>=1.1",
+    # Conversion de captures HTML (SingleFile) -> Markdown propre. Moteur copié
+    # dans tools/html_to_md/ (projet html_to_md) ; ci-dessous ses dépendances.
+    "beautifulsoup4>=4.12",
+    "lxml[html_clean]>=5.0",
+    "readability-lxml>=0.8",
+    "markdownify>=0.13",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
