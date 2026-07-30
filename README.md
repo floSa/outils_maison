@@ -60,6 +60,12 @@ uv run streamlit run app.py
 > La vérification BM Lyon nécessite en plus le navigateur Playwright :
 > `uv run playwright install chromium`.
 >
+> Le **filigrane** (texte répété en mosaïque : angle, espacement, couleur, taille,
+> opacité) est **incrusté en image**, y compris dans les PDF. Le texte n'y est donc
+> pas sélectionnable, et il reste retirable par un éditeur PDF : c'est un
+> **marquage, pas une protection**. L'original n'est jamais écrasé — la sortie est
+> suffixée `_filigrane`.
+>
 > La **synthèse vocale** (Kokoro) tourne en local sur CPU via `onnxruntime`
 > (aucun PyTorch, espeak-ng embarqué). Le modèle (~340 Mo) se télécharge **au
 > premier usage** depuis la page, puis est mis en cache. Accélération GPU NVIDIA

@@ -29,6 +29,8 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`ffmpeg_utils.py`](../tools/ffmpeg_utils.py) | Accès au binaire **ffmpeg embarqué** (`imageio-ffmpeg`), lancement de commandes, durée média | `imageio-ffmpeg`, `subprocess` |
 | [`audio.py`](../tools/audio.py) | Normalisation FLAC, conversion, extraction, découpe, volume, tags | `mutagen`, ffmpeg |
 | [`musique.py`](../tools/musique.py) | Regroupement de singles | `<à confirmer>` |
+| [`catalogue.py`](../tools/catalogue.py) | Catalogue CSV/Excel d'une bibliothèque musicale (NAS), 2 ou 3 niveaux selon le dossier de catégorie | `pandas`, `pathlib` |
+| [`clean_library.py`](../tools/clean_library.py) | Normalisation des noms `Artiste\Album\Titres` (noms de fichiers seuls, jamais les tags), prévisualisation + annulation | `tools.files`, `re`, `unicodedata` |
 | [`images.py`](../tools/images.py) | Redimensionner, convertir (dont HEIC), dédupliquer, renuméroter | `pillow`, `pillow-heif`, `imagehash` |
 | [`fonds.py`](../tools/fonds.py) | Appariement fonds d'écran paysage↔portrait (SIFT + RANSAC), audit, déduplication | `opencv-python`, `imagehash`, `pillow` |
 | [`video.py`](../tools/video.py) | Fusionner, découper, compresser, convertir, extraire images, GIF | `moviepy`, ffmpeg |
@@ -36,6 +38,7 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`watermark.py`](../tools/watermark.py) | Filigrane texte en mosaïque (angle, espacement, couleur, opacité) sur images et PDF | `pillow`, `pymupdf` |
 | [`files.py`](../tools/files.py) | Noms (slugify), doublons (SHA-1), arborescence→Excel, rangement, stats, comparaison, renommage CSV | `pandas`, `openpyxl` |
 | [`data.py`](../tools/data.py) | Conversions CSV / Excel / JSON, nettoyage de lignes | `pandas`, `openpyxl` |
+| [`html_md.py`](../tools/html_md.py) | Captures HTML (SingleFile) → Markdown, fichier ou dossier récursif, images en `_assets/` ; moteur `html_to_md` copié dans le sous-paquet | `beautifulsoup4`, `lxml`, `readability-lxml`, `markdownify` |
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
 | [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
 | [`tts.py`](../tools/tts.py) | Synthèse vocale locale (voix, vitesse, CPU/GPU), téléchargement du modèle | `kokoro-onnx`, `onnxruntime`, `numpy` |
@@ -120,6 +123,7 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | ffmpeg embarqué | Pas de binaire système requis ni de PATH à faire confiance | `ffmpeg_utils.py` |
 | Imports paresseux des extras | OpenCV / Playwright / Kokoro / CTranslate2 chargés seulement à l'usage | `fonds.py`, `bm_lyon.py`, `tts.py`, `traduction.py`, `transcription.py` |
 | Téléchargement atomique des modèles | Écrit dans `*.part` puis renomme : jamais de modèle à moitié écrit | `tts.py`, `traduction.py` |
+| Écriture dans un fichier distinct | Le filigrane n'écrase jamais la source : sortie suffixée `_filigrane` | `watermark.py`, pages `*_filigrane.py` |
 
 ---
 
@@ -170,6 +174,18 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
   *Limites* : sur CPU, les gros modèles restent lents sur un long fichier ; pas de
   diariation (qui parle) — WhisperX le ferait mais impose torch. *Alternatives* : modèles
   plus petits (`small`/`medium`) pour la vitesse, WhisperX si la diariation devient utile.
+- **Filigrane rasterisé (mosaïque Pillow incrustée en image)** **plutôt que** du texte
+  vectoriel PDF (`insert_textbox` de PyMuPDF, ou un calque `pypdf`), **parce qu'**un
+  **seul** moteur de rendu sert alors aux images **et** aux PDF : rendu strictement
+  identique dans les deux cas, un seul chemin de code à tester, et l'angle / l'opacité /
+  la mosaïque s'expriment naturellement en RGBA (`Image.alpha_composite`). La mosaïque
+  PDF est rendue à **2×** la résolution du point PDF (72 pt/pouce) pour rester nette à
+  l'impression. *Limites* : le texte n'est **pas sélectionnable ni recherchable** dans le
+  PDF produit, et chaque page gagne une image PNG (fichier plus lourd) ; le filigrane
+  reste **retirable** par un éditeur PDF — c'est un **marquage, pas une protection**.
+  *Alternative* : texte vectoriel PyMuPDF si la sélectionnabilité ou le poids devient
+  déterminant. La police suit une liste de repli (`DejaVuSans-Bold` puis Arial, sinon la
+  police Pillow intégrée) : le rendu peut donc varier d'une machine à l'autre.
 
 ---
 
@@ -184,3 +200,6 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
 | Synthèse vocale (français) | Une seule voix (`ff_siwis`, grade B-) ; modèle ~340 Mo à télécharger au 1er usage | Ajouter Piper en second moteur si plusieurs voix FR deviennent nécessaires |
 | Traduction | Modèle NLLB **CC-BY-NC** (non commercial) ; 600M (compromis qualité) ; ~623 Mo au 1er usage | Passer à NLLB-1.3B ou OPUS-MT selon le besoin qualité/poids |
 | Transcription | Lente sur CPU pour les gros modèles / longs fichiers ; pas de diariation | Modèle `small`/`medium` pour la vitesse ; WhisperX (torch) si diariation requise |
+| Filigrane | Rasterisé : texte non sélectionnable dans le PDF, +1 image par page ; **marquage, pas protection** (retirable) | Passer au texte vectoriel PyMuPDF si la sélectionnabilité ou le poids devient critique |
+| Filigrane — police | Repli `DejaVuSans-Bold` → Arial → police Pillow intégrée : rendu variable selon la machine | Embarquer une police au projet si le rendu doit être reproductible |
+| Filigrane — portée | Fichier unique (pas de traitement par dossier) ; PDF filigrané sur **toutes** les pages | Ajouter un mode dossier et une plage de pages si le besoin se confirme |

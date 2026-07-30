@@ -19,6 +19,8 @@ collection d'utilitaires personnels pour manipuler fichiers, médias et catalogu
    service tiers ni PyTorch.
 6. **Transcrire un audio/une vidéo** en texte et sous-titres, en local, sans
    service tiers ni PyTorch.
+7. **Marquer un document** (image ou PDF) d'un filigrane texte répété — angle,
+   espacement, couleur, taille et opacité réglables.
 
 ---
 
@@ -69,6 +71,7 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 | Interface | Streamlit | Apache-2.0 |
 | Données / tableurs | pandas · openpyxl | BSD-3-Clause · MIT |
 | PDF | pypdf · PyMuPDF | BSD-3-Clause · AGPL-3.0 |
+| Images | Pillow · pillow-heif · ImageHash | MIT-CMU (HPND) · *à confirmer* · BSD-2-Clause |
 | Médias | moviepy · ffmpeg embarqué | MIT · LGPL/GPL (binaire) |
 | Vision | opencv-python | Apache-2.0 |
 | Scraping | Playwright | Apache-2.0 |
@@ -90,22 +93,35 @@ et le tableau des licences dans le [README](../README.md#licences--composants).
 - Synthèse vocale par **Kokoro** (onnxruntime, sans PyTorch, espeak-ng embarqué)
   plutôt que par un moteur à PyTorch/GPU : reste local et léger. Justification
   contrastive en [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).
+- Filigrane **rasterisé** (mosaïque Pillow incrustée) plutôt que texte vectoriel PDF :
+  un seul moteur de rendu pour les images et les PDF. Conséquence assumée — le
+  filigrane est un **marquage, pas une protection** (texte non sélectionnable,
+  retirable par un éditeur PDF). Justification contrastive en
+  [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).
 
 (Justifications contrastives détaillées en
 [ARCHITECTURE.md §6](ARCHITECTURE.md#6-décisions-darchitecture).)
 
 **À trancher**
 - Fixer `imageio-ffmpeg` en dépendance directe (aujourd'hui transitif). `<à confirmer>`
+- Étendre le filigrane au **traitement par dossier** et à une **plage de pages** PDF
+  (aujourd'hui : un fichier à la fois, toutes les pages). `<à confirmer>`
+- Filigrane **image/logo** en plus du texte seul. `<à confirmer>`
 
 ---
 
 ## 7. Stratégie de tests
 
 - **Logique** : un fichier de test par module métier (`tests/test_audio.py`,
-  `test_images.py`, `test_pdf.py`, `test_files.py`, `test_data.py`, `test_fonds.py`,
-  `test_biblio.py`, `test_musique.py`, `test_bm_lyon.py`, `test_tts.py`) — le matching
-  BM Lyon est testé **sans navigateur** (fonctions pures isolées de Playwright) et la
-  synthèse vocale **sans télécharger le modèle** (découpage, encodage WAV, garde-fous).
+  `test_images.py`, `test_pdf.py`, `test_watermark.py`, `test_files.py`, `test_data.py`,
+  `test_fonds.py`, `test_biblio.py`, `test_musique.py`, `test_catalogue.py`,
+  `test_clean_library.py`, `test_html_md.py`, `test_bm_lyon.py`, `test_tts.py`,
+  `test_traduction.py`, `test_transcription.py`). Les modules à ressource externe sont
+  testés **sans cette ressource** : le matching BM Lyon **sans navigateur** (fonctions
+  pures isolées de Playwright), la synthèse vocale, la traduction et la transcription
+  **sans télécharger leur modèle** (découpage, encodage, garde-fous). Le filigrane est
+  vérifié sur une image et un PDF **factices générés à la volée** (dimensions
+  préservées, pixels effectivement modifiés, nombre de pages conservé).
 - **Rendu** : `tests/test_pages.py` charge chaque page via `streamlit.testing.v1.AppTest`
   et vérifie qu'elle se rend sans exception à entrées vides (smoke-test).
 - Lancement : `uv run pytest`.
