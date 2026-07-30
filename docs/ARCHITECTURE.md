@@ -33,6 +33,7 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`fonds.py`](../tools/fonds.py) | Appariement fonds d'écran paysage↔portrait (SIFT + RANSAC), audit, déduplication | `opencv-python`, `imagehash`, `pillow` |
 | [`video.py`](../tools/video.py) | Fusionner, découper, compresser, convertir, extraire images, GIF | `moviepy`, ffmpeg |
 | [`pdf.py`](../tools/pdf.py) | Extraire/fusionner/pivoter des pages, images↔PDF, compresser, protéger, texte | `pypdf`, `pymupdf` |
+| [`watermark.py`](../tools/watermark.py) | Filigrane texte en mosaïque (angle, espacement, couleur, opacité) sur images et PDF | `pillow`, `pymupdf` |
 | [`files.py`](../tools/files.py) | Noms (slugify), doublons (SHA-1), arborescence→Excel, rangement, stats, comparaison, renommage CSV | `pandas`, `openpyxl` |
 | [`data.py`](../tools/data.py) | Conversions CSV / Excel / JSON, nettoyage de lignes | `pandas`, `openpyxl` |
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
@@ -41,7 +42,7 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`traduction.py`](../tools/traduction.py) | Traduction hors-ligne (200 langues, CPU/GPU), téléchargement du modèle | `ctranslate2`, `transformers` (tokenizer), `sentencepiece` |
 | [`transcription.py`](../tools/transcription.py) | Transcription audio/vidéo → texte + sous-titres (CPU/GPU), téléchargement du modèle | `faster-whisper` (CTranslate2), `av` |
 
-> Les 43 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 50 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---

@@ -32,6 +32,7 @@ sections = {
         page("fonds_ecran.py", "Apparier des fonds d'écran", "🖼️"),
         page("fonds_audit.py", "Auditer les fonds triés", "🔎"),
         page("fonds_dedup.py", "Dédupliquer les fonds triés", "🧹"),
+        page("images_filigrane.py", "Filigrane", "💧"),
     ],
     "🎬 Vidéo": [
         page("video_merge.py", "Fusionner", "🎬"),
@@ -49,6 +50,7 @@ sections = {
         page("pdf_compresser.py", "Compresser", "🗜️"),
         page("pdf_securite.py", "Protéger / déprotéger", "🔒"),
         page("pdf_texte.py", "Extraire le texte", "📝"),
+        page("pdf_filigrane.py", "Filigrane", "💧"),
     ],
     "📁 Fichiers": [
         page("files_clean.py", "Nettoyer les noms", "🧹"),

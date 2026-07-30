@@ -30,6 +30,10 @@ FILETYPES_AUDIO = [
     ("Audio", "*.mp3 *.flac *.m4a *.ogg *.opus *.wav"),
     ("Tous les fichiers", "*.*"),
 ]
+FILETYPES_IMAGE = [
+    ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff *.webp"),
+    ("Tous les fichiers", "*.*"),
+]
 FILETYPES_TEXTE = [("Fichier texte", "*.txt"), ("Tous les fichiers", "*.*")]
 FILETYPES_CSV = [("CSV", "*.csv"), ("Tous les fichiers", "*.*")]
 FILETYPES_TABLEAU = [

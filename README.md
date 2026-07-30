@@ -46,9 +46,9 @@ uv run streamlit run app.py
 | Catégorie | Outils |
 |---|---|
 | Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
-| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran · Auditer les fonds triés |
+| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran · Auditer les fonds triés · Filigrane |
 | Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
-| PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte |
+| PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte · Filigrane |
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel · HTML → Markdown (captures SingleFile) |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | Voix & langues | Lire un texte à voix haute (Kokoro) · Traduire, 200 langues (NLLB-200) · Transcrire un audio/vidéo + sous-titres (Whisper) — tout en local, sans PyTorch |
@@ -98,6 +98,7 @@ outils_maison/
 │   ├── fonds.py        #   appariement fonds d'écran SIFT+RANSAC
 │   ├── video.py        #   fusionner, découper, compresser
 │   ├── pdf.py          #   extraire, fusionner, pages, images ↔ PDF
+│   ├── watermark.py    #   filigrane texte en mosaïque (images + PDF)
 │   ├── files.py        #   noms de fichiers, doublons, arborescence (+ annulation)
 │   ├── data.py         #   conversions CSV / Excel / JSON
 │   ├── tts.py          #   synthèse vocale locale (Kokoro / onnxruntime)
