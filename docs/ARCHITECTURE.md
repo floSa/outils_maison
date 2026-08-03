@@ -73,6 +73,11 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 `pyproject.toml` : il arrive en dépendance transitive (probablement via `moviepy`).
 `<à confirmer>` : le fixer en dépendance directe si l'on veut garantir sa présence.
 
+Le tableau donne les **planchers** déclarés dans `pyproject.toml`, pas les versions
+résolues : le `uv.lock` installe aujourd'hui opencv-python **5.0** (branche majeure
+suivante) et Streamlit **1.60**. Une exception à connaître : **Pillow reste en 11.3.0**,
+plafonné par `moviepy` (qui exige `pillow<12`) — ce n'est pas un choix du projet.
+
 ---
 
 ## 4. Flux de bout en bout
