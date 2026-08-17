@@ -121,13 +121,14 @@ if resultats:
                 "Cote": r.cote,
                 "Statut actuel": r.statut_actuel,
                 "Statut": r.statut,
+                "Artiste trouvé": r.artiste_trouve,
                 "Album trouvé": r.album_trouve,
                 "Cotes sur la fiche": ", ".join(r.cotes_trouvees),
             }
             for r in resultats
         ]
     )
-    ok = sum(r.statut == "OK trouvé" for r in resultats)
+    ok = sum(r.statut.startswith("OK trouvé") for r in resultats)
     st.success(f"{ok}/{len(resultats)} cote(s) confirmée(s).")
     st.dataframe(df, use_container_width=True, hide_index=True)
 

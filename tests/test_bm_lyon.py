@@ -1,11 +1,13 @@
 """Tests purs de tools/bm_lyon.py (aucune dépendance Playwright)."""
 
 from tools.bm_lyon import (
+    SEUIL_ALBUM_CONFIANCE,
     artist_name_matches,
     cote_equivalente,
     extraire_part_dieu,
     name_similarity,
     parser_notice,
+    suffixe_confiance,
 )
 
 
@@ -95,3 +97,17 @@ def test_cote_equivalente_espaces_casse():
 def test_cote_differente():
     assert not cote_equivalente("786.2 MAL 1", "786.2 MAL 2")
     assert not cote_equivalente("", "")
+
+
+# --- confiance du match d'album --------------------------------------------------
+
+def test_suffixe_confiance_score_haut():
+    assert suffixe_confiance(SEUIL_ALBUM_CONFIANCE) == ""
+    assert suffixe_confiance(0.99) == ""
+
+
+def test_suffixe_confiance_score_bas():
+    # Sous le seuil de confiance haute (mais au-dessus du seuil minimum
+    # d'acceptation 0.65) : signalé pour vérification manuelle.
+    assert suffixe_confiance(0.7) != ""
+    assert "vérifier" in suffixe_confiance(0.7)

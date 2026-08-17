@@ -34,7 +34,8 @@ from typing import Callable
 
 BM_HOME = "https://catalogue.bm-lyon.fr"
 SEUIL_ARTISTE = 0.85
-SEUIL_ALBUM = 0.65   # tolérant : suffixes "Deluxe", "Remastered", etc.
+SEUIL_ALBUM = 0.65          # minimum pour accepter un candidat (suffixes "Deluxe", "Remastered"…)
+SEUIL_ALBUM_CONFIANCE = 0.85  # en-dessous, l'album retenu est affiché mais marqué incertain
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +129,19 @@ def extraire_part_dieu(content_text: str) -> tuple[list[str], list[str]]:
     return cotes, statuts
 
 
+def suffixe_confiance(score_album: float) -> str:
+    """Suffixe à ajouter au statut quand le match d'album est en-dessous du
+    seuil de confiance haute (mais au-dessus du seuil minimum d'acceptation).
+
+    Permet à l'utilisateur de repérer, via `artiste_trouve`/`album_trouve`,
+    les cas où l'album retenu n'est pas une certitude (même si l'artiste a
+    passé le filtre strict) et de vérifier à l'œil.
+    """
+    if score_album < SEUIL_ALBUM_CONFIANCE:
+        return " — album incertain, vérifier l'artiste trouvé"
+    return ""
+
+
 def cote_equivalente(a: str, b: str) -> bool:
     """Compare deux cotes en tolérant casse/espaces ("786.2 MAL 1" ≡ "786.2  mal 1")."""
     na = re.sub(r"\s+", " ", (a or "")).strip().casefold()
@@ -147,6 +161,7 @@ class ResultatDispo:
     statut_actuel: str = ""       # ex. "En rayon", "Prêté - Retour prévu le : …"
     statut: str = ""              # OK trouvé / cote non retrouvée / …
     album_trouve: str = ""        # titre du CD retenu au catalogue
+    artiste_trouve: str = ""      # auteur tel qu'écrit sur la fiche retenue (à comparer à `artiste`)
     cotes_trouvees: list[str] = field(default_factory=list)
 
 
@@ -320,10 +335,13 @@ def verifier_disponibilites(
                         best_s, best = s, nt
                 if not best or best_s < SEUIL_ALBUM:
                     res.statut = "album non retrouvé"
+                    if best:
+                        res.artiste_trouve = best["author"]
                     _log(f"   ❌ {artiste} — {album} : album absent "
                          f"(meilleur titre à {best_s:.2f})")
                     continue
                 res.album_trouve = best["title"]
+                res.artiste_trouve = best["author"]
 
                 if best["href"] in cache_fiches:
                     cotes, statuts = cache_fiches[best["href"]]
@@ -333,16 +351,17 @@ def verifier_disponibilites(
                 res.cotes_trouvees = cotes
 
                 # Comparer à LA cote fournie (plusieurs exemplaires possibles).
+                suffixe = suffixe_confiance(best_s)
                 trouve = False
                 for c, s in zip(cotes, statuts):
                     if cote_equivalente(c, cote):
-                        res.statut = "OK trouvé"
+                        res.statut = "OK trouvé" + suffixe
                         res.statut_actuel = s
                         trouve = True
                         _log(f"   ✅ {artiste} — {album} [{cote}] : {s}")
                         break
                 if not trouve:
-                    res.statut = "cote non retrouvée, à vérifier manuellement"
+                    res.statut = "cote non retrouvée, à vérifier manuellement" + suffixe
                     _log(f"   ⚠️ {artiste} — {album} : cote {cote!r} absente "
                          f"de la fiche (trouvé : {cotes or 'aucune'})")
 
