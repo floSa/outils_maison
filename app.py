@@ -81,6 +81,7 @@ sections = {
     "📚 Bibliothèque municipale": [
         page("biblio_cotes.py", "Trier des cotes", "📇"),
         page("biblio_dispo.py", "Vérifier la disponibilité BM Lyon", "📗"),
+        page("biblio_artistes.py", "Récolter les CD d'artistes", "🎧"),
     ],
 }
 

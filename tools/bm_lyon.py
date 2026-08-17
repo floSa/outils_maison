@@ -371,3 +371,102 @@ def verifier_disponibilites(
 
         browser.close()
     return resultats
+
+
+# ---------------------------------------------------------------------------
+# Récolte par artiste (pas d'album/cote connus au départ)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DisqueArtiste:
+    artistes_recherches: str        # texte d'origine de la cellule (ex. "Synapson,Tim Dup,Lass")
+    artiste_trouve: str             # auteur(s) tel qu'écrit(s) sur la fiche, qui ont matché
+    album: str
+    cotes: list[str] = field(default_factory=list)
+    statuts: list[str] = field(default_factory=list)
+
+
+def recolter_disques_artistes(
+    groupes_artistes: list[str],
+    *,
+    log: Callable[[str], None] | None = None,
+    progress: Callable[[int, int], None] | None = None,
+) -> list[DisqueArtiste]:
+    """Pour chaque groupe d'artistes, récolte tous les CD disponibles à la Part-Dieu.
+
+    Un « groupe » est une cellule pouvant contenir plusieurs noms séparés par
+    des virgules (featuring, collectif...) : chaque nom est recherché
+    séparément — le catalogue indexe parfois un disque sous un seul des noms —
+    puis les fiches trouvées sont fusionnées par URL (un même disque retrouvé
+    par plusieurs noms n'apparaît qu'une fois, avec la liste des auteurs
+    trouvés). Seuls les disques ayant au moins une cote Part-Dieu sont
+    conservés ; un groupe sans disque disponible n'apparaît pas dans le résultat.
+    """
+    from playwright.sync_api import sync_playwright
+
+    def _log(m: str) -> None:
+        if log:
+            log(m)
+
+    resultats: list[DisqueArtiste] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            locale="fr-FR",
+        )
+        page = context.new_page()
+
+        for i, groupe in enumerate(groupes_artistes, start=1):
+            if progress:
+                progress(i, len(groupes_artistes))
+            noms = [n.strip() for n in groupe.split(",") if n.strip()]
+            if not noms:
+                continue
+
+            fiches: dict[str, dict] = {}  # href -> {title, authors: set, href}
+            for nom in noms:
+                _log(f"🔍 {nom} : recherche au catalogue…")
+                try:
+                    notices = _harvest_artist_cd_notices(page, nom)
+                    if not notices:
+                        # Retry : cf. verifier_disponibilites (aléa réseau/timing).
+                        time.sleep(2)
+                        notices = _harvest_artist_cd_notices(page, nom)
+                except Exception as e:
+                    _log(f"   💥 {nom} : {e}")
+                    continue
+                for nt in notices:
+                    href = nt["href"]
+                    fiche = fiches.setdefault(
+                        href, {"title": nt["title"], "authors": set(), "href": href}
+                    )
+                    fiche["authors"].add(nt["author"])
+
+            if not fiches:
+                _log(f"   ❌ {groupe} : aucun CD trouvé")
+                continue
+
+            for href, info in fiches.items():
+                try:
+                    cotes, statuts = _lire_part_dieu(page, href)
+                except Exception as e:
+                    _log(f"   💥 {info['title']} : {e}")
+                    continue
+                if not cotes:
+                    continue
+                resultats.append(
+                    DisqueArtiste(
+                        artistes_recherches=groupe,
+                        artiste_trouve=" / ".join(sorted(info["authors"])),
+                        album=info["title"],
+                        cotes=cotes,
+                        statuts=statuts,
+                    )
+                )
+                _log(f"   ✅ {info['title']} : {', '.join(cotes)}")
+
+        browser.close()
+    return resultats

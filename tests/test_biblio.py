@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from tools import biblio
@@ -28,6 +29,22 @@ def test_parser_csv_sans_cote_conserve():
 def test_parser_csv_colonnes_manquantes():
     with pytest.raises(ValueError):
         biblio.parser_csv("Titre,Auteur\nX,Y\n")
+
+
+def test_extraire_colonne_artistes():
+    df = pd.DataFrame({"Artiste": ["Fakear", "  ", "Synapson,Tim Dup,Lass", None]})
+    assert biblio.extraire_colonne_artistes(df) == ["Fakear", "Synapson,Tim Dup,Lass"]
+
+
+def test_extraire_colonne_artistes_entete_insensible_casse():
+    df = pd.DataFrame({"ARTISTES": ["Fakear"], "Album": ["Sauvage"]})
+    assert biblio.extraire_colonne_artistes(df) == ["Fakear"]
+
+
+def test_extraire_colonne_artistes_colonne_absente():
+    df = pd.DataFrame({"Nom": ["Fakear"]})
+    with pytest.raises(ValueError):
+        biblio.extraire_colonne_artistes(df)
 
 
 def test_parser_cote_simple():

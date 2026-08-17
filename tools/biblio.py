@@ -74,6 +74,22 @@ def parser_csv(texte: str) -> list[Entree]:
     return entrees
 
 
+def extraire_colonne_artistes(df) -> list[str]:
+    """Extrait la colonne « Artiste » d'un tableau (DataFrame pandas), une entrée par ligne.
+
+    En-tête reconnu sans tenir compte de la casse (``artiste`` ou ``artistes``).
+    Les cellules vides sont ignorées ; une cellule peut contenir plusieurs noms
+    séparés par des virgules (ex. ``"Synapson,Tim Dup,Lass"``) — c'est à
+    l'appelant de les rechercher séparément, cette fonction les renvoie tels quels.
+    """
+    colonnes = {str(c).strip().lower(): c for c in df.columns}
+    col = colonnes.get("artiste") or colonnes.get("artistes")
+    if col is None:
+        raise ValueError("Le fichier doit contenir une colonne « Artiste ».")
+    valeurs = df[col].dropna().astype(str).str.strip()
+    return [v for v in valeurs if v]
+
+
 def _cle_cote(e: Entree) -> tuple[float, str]:
     """Clé de tri : partie numérique de la cote (Dewey) puis reste alphanumérique."""
     m = re.match(r"(\d+(?:\.\d+)?)\s*(.*)", e.cote)
