@@ -40,12 +40,12 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`data.py`](../tools/data.py) | Conversions CSV / Excel / JSON, nettoyage de lignes | `pandas`, `openpyxl` |
 | [`html_md.py`](../tools/html_md.py) | Captures HTML (SingleFile) → Markdown, fichier ou dossier récursif, images en `_assets/` ; moteur `html_to_md` copié dans le sous-paquet | `beautifulsoup4`, `lxml`, `readability-lxml`, `markdownify` |
 | [`biblio.py`](../tools/biblio.py) | Tri de cotes de bibliothèque | `<à confirmer>` |
-| [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
+| [`bm_lyon.py`](../tools/bm_lyon.py) | Vérification de disponibilité et récolte de CD par artiste au catalogue BM Lyon (scraping) | `playwright`, `difflib` |
 | [`tts.py`](../tools/tts.py) | Synthèse vocale locale (voix, vitesse, CPU/GPU), téléchargement du modèle | `kokoro-onnx`, `onnxruntime`, `numpy` |
 | [`traduction.py`](../tools/traduction.py) | Traduction hors-ligne (200 langues, CPU/GPU), téléchargement du modèle | `ctranslate2`, `transformers` (tokenizer), `sentencepiece` |
 | [`transcription.py`](../tools/transcription.py) | Transcription audio/vidéo → texte + sous-titres (CPU/GPU), téléchargement du modèle | `faster-whisper` (CTranslate2), `av` |
 
-> Les 50 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 51 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---
@@ -153,6 +153,12 @@ sont donc des garde-fous d'**intégrité des données**, pas d'isolation réseau
   l'album précis est mal indexé au catalogue ; matching tolérant (sous-ensemble de nom,
   découpe sur le 1er `" - "`). *Limite* : dépend du HTML du site, fragile aux
   changements (cf. docstring de [`bm_lyon.py`](../tools/bm_lyon.py)).
+- **Score de similarité artiste exposé à l'utilisateur** (colonnes « Artiste trouvé » /
+  « Score confiance » côté UI) **plutôt que** ne renvoyer qu'un statut binaire trouvé/pas
+  trouvé, **parce que** le catalogue nomme parfois artistes et albums de façon trompeuse
+  (inversion nom/prénom, nom de scène partiel) : l'utilisateur vérifie à l'œil au lieu de
+  faire confiance à un matching qu'il ne peut pas auditer. *Limite* : un score élevé ne
+  garantit pas l'absence de faux positif, seulement une similarité textuelle.
 - **Synthèse vocale par Kokoro (via `kokoro-onnx`)** **plutôt que** Piper, Chatterbox ou
   XTTS, **parce que** Kokoro donne la voix la plus naturelle tout en tournant sur CPU via
   `onnxruntime` **sans PyTorch** (Chatterbox/XTTS imposent `torch` et visent le GPU), et

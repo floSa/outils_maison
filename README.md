@@ -52,7 +52,7 @@ uv run streamlit run app.py
 | Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel · HTML → Markdown (captures SingleFile) |
 | Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
 | Voix & langues | Lire un texte à voix haute (Kokoro) · Traduire, 200 langues (NLLB-200) · Transcrire un audio/vidéo + sous-titres (Whisper) — tout en local, sans PyTorch |
-| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon |
+| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon (texte ou CSV) · Récolter les CD d'artistes au catalogue |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
