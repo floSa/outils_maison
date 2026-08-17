@@ -4,8 +4,13 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from tools.biblio import parser_lignes
-from ui import FILETYPES_TEXTE, champ_fichier
+from tools.biblio import parser_csv, parser_lignes
+from ui import champ_fichier
+
+FILETYPES_TEXTE_OU_CSV = [
+    ("Texte ou CSV", "*.txt *.csv"),
+    ("Tous les fichiers", "*.*"),
+]
 
 st.title("📗 Vérifier la disponibilité BM Lyon")
 st.caption(
@@ -30,6 +35,7 @@ col_source, col_btn = st.columns([4, 1], vertical_alignment="bottom")
 source = col_source.radio("Source", ["Coller du texte", "Fichier"], horizontal=True)
 
 texte = ""
+est_csv = False
 if source == "Coller du texte":
     texte = st.text_area(
         "Lignes « Artiste - Album - Cote » (une par ligne, copiées depuis un tableur)",
@@ -38,18 +44,34 @@ if source == "Coller du texte":
     )
 else:
     chemin = champ_fichier(
-        "Fichier texte",
+        "Fichier texte ou CSV",
         "bm_dispo_chemin",
-        filetypes=FILETYPES_TEXTE,
-        placeholder="C:/Users/.../cotes_bibli.txt",
+        filetypes=FILETYPES_TEXTE_OU_CSV,
+        placeholder="C:/Users/.../cotes_bibli.txt ou .csv",
+        aide="CSV : colonnes « Artiste », « Album », « Cote ».",
     )
     if chemin and Path(chemin).is_file():
-        texte = Path(chemin).read_text(encoding="utf-8")
+        texte = Path(chemin).read_text(encoding="utf-8-sig")
+        est_csv = Path(chemin).suffix.lower() == ".csv"
     elif chemin:
         st.error("Fichier introuvable.")
 
-entrees = [e for e in parser_lignes(texte) if e.cote] if texte.strip() else []
-invalides = [e for e in parser_lignes(texte) if not e.cote] if texte.strip() else []
+toutes_entrees: list = []
+erreur_csv = ""
+if texte.strip():
+    if est_csv:
+        try:
+            toutes_entrees = parser_csv(texte)
+        except ValueError as exc:
+            erreur_csv = str(exc)
+    else:
+        toutes_entrees = parser_lignes(texte)
+
+if erreur_csv:
+    st.error(erreur_csv)
+
+entrees = [e for e in toutes_entrees if e.cote]
+invalides = [e for e in toutes_entrees if not e.cote]
 
 # Bouton d'action, sur la même ligne que « Source ».
 valider = col_btn.button("Vérifier", type="primary", use_container_width=True)

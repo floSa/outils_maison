@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +38,39 @@ def parser_lignes(texte: str) -> list[Entree]:
             album = " - ".join(parts[1:])
             cote = ""
         entrees.append(Entree(artiste=artiste, album=album, cote=cote, brut=ligne))
+    return entrees
+
+
+def parser_csv(texte: str) -> list[Entree]:
+    """Parse un CSV à colonnes ``Artiste``, ``Album``, ``Cote`` (cote facultative).
+
+    Les en-têtes sont reconnus sans tenir compte de la casse ni des espaces.
+    Une ligne sans cote est conservée (utile pour vérifier l'existence
+    artiste/album et récupérer la cote actuelle, sans en connaître une au
+    départ).
+    """
+    lecteur = csv.DictReader(io.StringIO(texte))
+    entetes = {
+        (nom or "").strip().lower(): nom for nom in (lecteur.fieldnames or [])
+    }
+    col_artiste = entetes.get("artiste")
+    col_album = entetes.get("album")
+    col_cote = entetes.get("cote")
+    if col_artiste is None or col_album is None:
+        raise ValueError(
+            "Le CSV doit contenir au moins les colonnes « Artiste » et « Album » "
+            "(« Cote » facultative)."
+        )
+
+    entrees: list[Entree] = []
+    for ligne in lecteur:
+        artiste = (ligne.get(col_artiste) or "").strip()
+        album = (ligne.get(col_album) or "").strip()
+        cote = (ligne.get(col_cote) or "").strip() if col_cote else ""
+        if not artiste and not album:
+            continue
+        brut = " - ".join(p for p in (artiste, album, cote) if p)
+        entrees.append(Entree(artiste=artiste, album=album, cote=cote, brut=brut))
     return entrees
 
 

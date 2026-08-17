@@ -1,4 +1,33 @@
+import pytest
+
 from tools import biblio
+
+
+def test_parser_csv_complet():
+    txt = "Artiste,Album,Cote\nCliff Martinez,The Knick,786.1 KNI 3\nGaëtan Roussel,Ginger,780.65 ROU\n"
+    entrees = biblio.parser_csv(txt)
+    assert [e.artiste for e in entrees] == ["Cliff Martinez", "Gaëtan Roussel"]
+    assert entrees[0].album == "The Knick"
+    assert entrees[0].cote == "786.1 KNI 3"
+
+
+def test_parser_csv_entetes_insensibles_casse():
+    txt = "ARTISTE , Album \nDanny Elfman,Alice\n"
+    [e] = biblio.parser_csv(txt)
+    assert e.artiste == "Danny Elfman"
+    assert e.album == "Alice"
+
+
+def test_parser_csv_sans_cote_conserve():
+    txt = "Artiste,Album\nDanny Elfman,Alice\n"
+    [e] = biblio.parser_csv(txt)
+    assert e.cote == ""
+    assert e.brut == "Danny Elfman - Alice"
+
+
+def test_parser_csv_colonnes_manquantes():
+    with pytest.raises(ValueError):
+        biblio.parser_csv("Titre,Auteur\nX,Y\n")
 
 
 def test_parser_cote_simple():
