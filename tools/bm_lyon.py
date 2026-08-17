@@ -379,11 +379,12 @@ def verifier_disponibilites(
 
 @dataclass
 class DisqueArtiste:
-    artistes_recherches: str        # texte d'origine de la cellule (ex. "Synapson,Tim Dup,Lass")
-    artiste_trouve: str             # auteur(s) tel qu'écrit(s) sur la fiche, qui ont matché
+    artiste_recherche: str    # nom individuel recherché (un des noms de la cellule, ex. "Synapson")
+    artiste_trouve: str       # auteur tel qu'écrit sur la fiche retenue
+    score_artiste: float      # similarité artiste_recherche vs artiste_trouve (0-1, cf. name_similarity)
     album: str
-    cotes: list[str] = field(default_factory=list)
-    statuts: list[str] = field(default_factory=list)
+    cote: str
+    statut: str
 
 
 def recolter_disques_artistes(
@@ -396,11 +397,18 @@ def recolter_disques_artistes(
 
     Un « groupe » est une cellule pouvant contenir plusieurs noms séparés par
     des virgules (featuring, collectif...) : chaque nom est recherché
-    séparément — le catalogue indexe parfois un disque sous un seul des noms —
-    puis les fiches trouvées sont fusionnées par URL (un même disque retrouvé
-    par plusieurs noms n'apparaît qu'une fois, avec la liste des auteurs
-    trouvés). Seuls les disques ayant au moins une cote Part-Dieu sont
-    conservés ; un groupe sans disque disponible n'apparaît pas dans le résultat.
+    séparément — le catalogue indexe parfois un disque sous un seul des noms.
+    Un même disque n'est retenu qu'une fois par groupe (dédoublonnage par URL
+    de fiche), avec le nom recherché qui l'a le mieux matché (score le plus
+    haut) si plusieurs noms du groupe l'ont retrouvé.
+
+    Le score de similarité artiste (0 à 1, seuil d'acceptation 0.85 — ou
+    accepté en-dessous si `artiste_recherche` est un sous-ensemble strict de
+    `artiste_trouve`, ex. "Bourvil" ⊂ "André Bourvil") permet de voir *pourquoi*
+    un disque a été retenu pour cet artiste, sans avoir à faire confiance
+    aveuglément. Une ligne par exemplaire (cote + statut) ; seuls les disques
+    ayant au moins une cote Part-Dieu sont conservés ; un groupe sans disque
+    disponible n'apparaît pas dans le résultat.
     """
     from playwright.sync_api import sync_playwright
 
@@ -426,7 +434,9 @@ def recolter_disques_artistes(
             if not noms:
                 continue
 
-            fiches: dict[str, dict] = {}  # href -> {title, authors: set, href}
+            # href -> {title, nom_recherche, author, score} : on garde le
+            # meilleur score si plusieurs noms du groupe retrouvent le même disque.
+            fiches: dict[str, dict] = {}
             for nom in noms:
                 _log(f"🔍 {nom} : recherche au catalogue…")
                 try:
@@ -440,10 +450,15 @@ def recolter_disques_artistes(
                     continue
                 for nt in notices:
                     href = nt["href"]
-                    fiche = fiches.setdefault(
-                        href, {"title": nt["title"], "authors": set(), "href": href}
-                    )
-                    fiche["authors"].add(nt["author"])
+                    score = name_similarity(nom, nt["author"])
+                    existant = fiches.get(href)
+                    if existant is None or score > existant["score"]:
+                        fiches[href] = {
+                            "title": nt["title"],
+                            "nom_recherche": nom,
+                            "author": nt["author"],
+                            "score": score,
+                        }
 
             if not fiches:
                 _log(f"   ❌ {groupe} : aucun CD trouvé")
@@ -457,15 +472,17 @@ def recolter_disques_artistes(
                     continue
                 if not cotes:
                     continue
-                resultats.append(
-                    DisqueArtiste(
-                        artistes_recherches=groupe,
-                        artiste_trouve=" / ".join(sorted(info["authors"])),
-                        album=info["title"],
-                        cotes=cotes,
-                        statuts=statuts,
+                for cote, statut in zip(cotes, statuts):
+                    resultats.append(
+                        DisqueArtiste(
+                            artiste_recherche=info["nom_recherche"],
+                            artiste_trouve=info["author"],
+                            score_artiste=round(info["score"], 2),
+                            album=info["title"],
+                            cote=cote,
+                            statut=statut,
+                        )
                     )
-                )
                 _log(f"   ✅ {info['title']} : {', '.join(cotes)}")
 
         browser.close()

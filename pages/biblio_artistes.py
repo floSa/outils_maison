@@ -19,6 +19,13 @@ st.caption(
     "avec plusieurs artistes séparés par une virgule est recherchée nom par "
     "nom, puis les résultats sont fusionnés par disque."
 )
+st.caption(
+    "« Score confiance » : similarité entre le nom recherché (colonne "
+    "« Artiste ») et l'auteur tel qu'écrit sur la fiche (« Artiste trouvé »), "
+    "de 0 à 1. Un disque est retenu à partir de 0.85, ou en-dessous si le nom "
+    "recherché est inclus dans le nom trouvé (ex. « Bourvil » dans "
+    "« André Bourvil »)."
+)
 
 # --- Dépendance navigateur (Playwright) ---------------------------------------
 try:
@@ -86,11 +93,12 @@ if resultats:
     df_resultats = pd.DataFrame(
         [
             {
-                "Artiste(s) recherché(s)": r.artistes_recherches,
-                "Artiste trouvé": r.artiste_trouve,
+                "Artiste": r.artiste_recherche,
                 "Album": r.album,
-                "Cotes (Part-Dieu)": ", ".join(r.cotes),
-                "Statuts": ", ".join(r.statuts),
+                "Cote": r.cote,
+                "Statut": r.statut,
+                "Artiste trouvé": r.artiste_trouve,
+                "Score confiance": r.score_artiste,
             }
             for r in resultats
         ]
