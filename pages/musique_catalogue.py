@@ -122,3 +122,25 @@ if cible and st.button("Enregistrer le fichier Excel"):
         st.error(str(e))
     except OSError as e:
         st.error(f"Écriture impossible : {e}")
+
+st.divider()
+st.markdown("#### Export pour Music_Tools")
+st.caption(
+    "Écrit directement `bibliotheque.csv` (colonnes `Artist` / `Album`, celles "
+    "attendues par Music_Tools) dans son dossier `data/Bibliotheque/`, à la place "
+    "du scan NAS intégré à Music_Tools."
+)
+
+MUSIC_TOOLS_BIBLIO_DIR = Path.home() / "mes_projets" / "Musique_Tools" / "data" / "Bibliotheque"
+
+if st.button("📤 Exporter pour Music_Tools"):
+    df_compat = pd.DataFrame(cat.lignes, columns=["Artist", "Album"])
+    try:
+        MUSIC_TOOLS_BIBLIO_DIR.mkdir(parents=True, exist_ok=True)
+        csv_path = MUSIC_TOOLS_BIBLIO_DIR / "bibliotheque.csv"
+        xlsx_path = MUSIC_TOOLS_BIBLIO_DIR / "bibliotheque.xlsx"
+        df_compat.to_csv(csv_path, index=False)
+        df_compat.to_excel(xlsx_path, index=False)
+        st.success(f"Écrit : `{csv_path}` et `{xlsx_path}` ({len(df_compat)} albums)")
+    except OSError as e:
+        st.error(f"Écriture impossible : {e}")
