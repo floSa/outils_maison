@@ -70,7 +70,7 @@ if valider:
     journal = st.status("Recherche au catalogue…", expanded=True)
 
     def _progress(i, total):
-        barre.progress(i / total, text=f"Groupe {i}/{total}")
+        barre.progress(i / total, text=f"Recherche {i}/{total}")
 
     with journal as statut:
         try:

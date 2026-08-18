@@ -402,6 +402,10 @@ def recolter_disques_artistes(
     de fiche), avec le nom recherché qui l'a le mieux matché (score le plus
     haut) si plusieurs noms du groupe l'ont retrouvé.
 
+    `progress(i, total)` est appelé à chaque **nom individuel** recherché
+    (pas à chaque ligne du fichier) : `total` est la somme des noms sur tous
+    les groupes, pour que la barre avance aussi sur les cellules multi-artistes.
+
     Le score de similarité artiste (0 à 1, seuil d'acceptation 0.85 — ou
     accepté en-dessous si `artiste_recherche` est un sous-ensemble strict de
     `artiste_trouve`, ex. "Bourvil" ⊂ "André Bourvil") permet de voir *pourquoi*
@@ -418,6 +422,16 @@ def recolter_disques_artistes(
 
     resultats: list[DisqueArtiste] = []
 
+    # Progression comptée en NOMS individuels recherchés (pas en lignes du
+    # fichier) : une cellule multi-artistes fait plusieurs recherches, la
+    # barre doit avancer à chacune, pas rester bloquée jusqu'à la fin du groupe.
+    tous_les_noms = [
+        (groupe, [n.strip() for n in groupe.split(",") if n.strip()])
+        for groupe in groupes_artistes
+    ]
+    total_recherches = sum(len(noms) for _, noms in tous_les_noms) or 1
+    compteur = 0
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
@@ -427,10 +441,7 @@ def recolter_disques_artistes(
         )
         page = context.new_page()
 
-        for i, groupe in enumerate(groupes_artistes, start=1):
-            if progress:
-                progress(i, len(groupes_artistes))
-            noms = [n.strip() for n in groupe.split(",") if n.strip()]
+        for groupe, noms in tous_les_noms:
             if not noms:
                 continue
 
@@ -438,6 +449,9 @@ def recolter_disques_artistes(
             # meilleur score si plusieurs noms du groupe retrouvent le même disque.
             fiches: dict[str, dict] = {}
             for nom in noms:
+                compteur += 1
+                if progress:
+                    progress(compteur, total_recherches)
                 _log(f"🔍 {nom} : recherche au catalogue…")
                 try:
                     notices = _harvest_artist_cd_notices(page, nom)
