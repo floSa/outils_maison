@@ -506,6 +506,28 @@ class DisqueArtiste:
     statut: str
 
 
+def dedupliquer_groupes(groupes: list[str]) -> list[str]:
+    """Dédoublonne une liste de groupes d'artistes par texte normalisé,
+    en conservant l'ordre de première apparition.
+
+    Un fichier source « une ligne par album déjà connu » répète le même
+    artiste sur plusieurs lignes (ex. Fakear apparaît 3 fois, une par album
+    qu'on connaît déjà) : sans ce filtre, ses CD seraient réémis en
+    intégralité à chaque répétition (le cache de `recolter_disques_artistes`
+    évite bien de re-scraper, mais pas de ré-ajouter les mêmes résultats en
+    sortie) — constaté en usage réel : ~450 lignes → ~4400 résultats au lieu
+    d'environ 450-500 disques réels.
+    """
+    vus: set[str] = set()
+    uniques: list[str] = []
+    for g in groupes:
+        cle = normalize(g)
+        if cle and cle not in vus:
+            vus.add(cle)
+            uniques.append(g)
+    return uniques
+
+
 def recolter_disques_artistes(
     groupes_artistes: list[str],
     *,
@@ -514,6 +536,13 @@ def recolter_disques_artistes(
     arret: threading.Event | None = None,
 ) -> list[DisqueArtiste]:
     """Pour chaque groupe d'artistes, récolte tous les CD disponibles à la Part-Dieu.
+
+    `groupes_artistes` est dédoublonné en entrée (texte normalisé) : un
+    fichier source « une ligne par album déjà connu » répète le même artiste
+    sur plusieurs lignes — sans dédoublonnage, ses CD seraient réémis en
+    intégralité à chaque répétition (multiplication du fichier de sortie par
+    des facteurs de 5 à 10, constatée en usage réel sur ~450 lignes/4400
+    résultats).
 
     Un « groupe » est une cellule pouvant contenir plusieurs noms séparés par
     des virgules (featuring, collectif...) : chaque nom est recherché
@@ -551,7 +580,7 @@ def recolter_disques_artistes(
     # barre doit avancer à chacune, pas rester bloquée jusqu'à la fin du groupe.
     tous_les_noms = [
         (groupe, [n.strip() for n in groupe.split(",") if n.strip()])
-        for groupe in groupes_artistes
+        for groupe in dedupliquer_groupes(groupes_artistes)
     ]
     total_recherches = sum(len(noms) for _, noms in tous_les_noms) or 1
     compteur = 0

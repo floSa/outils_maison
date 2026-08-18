@@ -4,6 +4,7 @@ from tools.bm_lyon import (
     SEUIL_ALBUM_CONFIANCE,
     artist_name_matches,
     cote_equivalente,
+    dedupliquer_groupes,
     extraire_part_dieu,
     name_similarity,
     nettoyer_auteur_dom,
@@ -150,3 +151,25 @@ def test_suffixe_confiance_score_bas():
     # d'acceptation 0.65) : signalé pour vérification manuelle.
     assert suffixe_confiance(0.7) != ""
     assert "vérifier" in suffixe_confiance(0.7)
+
+
+# --- dédoublonnage des groupes d'artistes (récolte par artiste) -----------------
+
+def test_dedupliquer_groupes_repetitions():
+    # Cas réel : un fichier "une ligne par album connu" répète l'artiste.
+    groupes = ["Fakear", "Fakear", "Fakear", "Kavinsky", "Kavinsky"]
+    assert dedupliquer_groupes(groupes) == ["Fakear", "Kavinsky"]
+
+
+def test_dedupliquer_groupes_insensible_casse_accents():
+    assert dedupliquer_groupes(["Gaëtan Roussel", "gaetan roussel", "GAËTAN ROUSSEL"]) == [
+        "Gaëtan Roussel"
+    ]
+
+
+def test_dedupliquer_groupes_conserve_ordre_premiere_apparition():
+    assert dedupliquer_groupes(["B", "A", "B", "C", "A"]) == ["B", "A", "C"]
+
+
+def test_dedupliquer_groupes_ignore_vides():
+    assert dedupliquer_groupes(["Fakear", "", "  ", "Fakear"]) == ["Fakear"]

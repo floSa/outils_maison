@@ -38,7 +38,7 @@ st.caption(
 try:
     import playwright  # noqa: F401
 
-    from tools.bm_lyon import recolter_disques_artistes
+    from tools.bm_lyon import normalize, recolter_disques_artistes
 except ModuleNotFoundError:
     st.warning(
         "Cet outil nécessite Playwright et son navigateur :\n\n"
@@ -68,7 +68,15 @@ elif chemin:
     st.error("Fichier introuvable.")
 
 if groupes:
-    st.write(f"{len(groupes)} groupe(s) d'artiste(s) à rechercher.")
+    n_uniques = len({normalize(g) for g in groupes if normalize(g)})
+    if n_uniques < len(groupes):
+        st.write(
+            f"{len(groupes)} ligne(s) dans le fichier, **{n_uniques} artiste(s) unique(s)** "
+            f"à rechercher (doublons dédupliqués automatiquement — même artiste sur "
+            f"plusieurs lignes, ex. une ligne par album déjà connu)."
+        )
+    else:
+        st.write(f"{len(groupes)} groupe(s) d'artiste(s) à rechercher.")
 
 def _lancer_recolte(groupes, journal, avancement, sortie, arret):
     """Tourne dans un thread séparé : ne doit appeler AUCUNE fonction Streamlit
