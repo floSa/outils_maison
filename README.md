@@ -45,72 +45,17 @@ uv run streamlit run app.py
 
 49 outils, répartis en 9 catégories (calées sur la navigation de `app.py`).
 
-#### 🎵 Audio
-- **Normaliser des FLAC** — corrige le gain audio
-- **Convertir un format** — bascule entre formats audio
-- **Extraire l'audio d'une vidéo** — isole la piste audio
-- **Découper** — extrait un segment audio
-- **Normaliser le volume** — égalise le niveau sonore
-- **Renommer depuis les tags** — noms de fichiers ← métadonnées
-- **Éditer les tags en masse** — modifie ID3/Vorbis en lot
-
-#### 🖼️ Images
-- **Redimensionner / compresser** — réduit taille et poids
-- **Convertir de format** — bascule entre formats (dont HEIC)
-- **Trouver les doublons** — détecte images identiques/similaires
-- **Renuméroter** — renomme en séquence numérotée
-- **Apparier des fonds d'écran** — associe paysage ↔ portrait
-- **Auditer les fonds triés** — vérifie l'appariement effectué
-- **Dédupliquer les fonds triés** — retire les doublons triés
-- **Filigrane** — incruste un marquage texte
-
-#### 🎬 Vidéo
-- **Fusionner** — assemble plusieurs vidéos
-- **Découper** — extrait un segment vidéo
-- **Compresser** — réduit le poids vidéo
-- **Convertir** — bascule entre formats vidéo
-- **Extraire des images** — capture des images fixes
-- **Créer un GIF** — convertit un extrait en GIF
-
-#### 📄 PDF
-- **Extraire des pages** — isole certaines pages
-- **Fusionner** — assemble plusieurs PDF
-- **Supprimer / pivoter des pages** — édite la structure du PDF
-- **Images ↔ PDF** — convertit dans les deux sens
-- **Compresser** — réduit le poids du PDF
-- **Protéger / déprotéger** — gère le mot de passe
-- **Extraire le texte** — récupère le texte du PDF
-- **Filigrane** — incruste un marquage texte
-
-#### 📁 Fichiers
-- **Nettoyer les noms** — retire les caractères parasites
-- **Renommer en masse** — motif de renommage global
-- **Renommer depuis un CSV** — table ancien/nouveau nom
-- **Fichiers en double** — détecte les doublons par contenu
-- **Ranger automatiquement** — trie dans des sous-dossiers
-- **Statistiques** — compte et pèse un dossier
-- **Comparer deux dossiers** — diff de contenu
-- **Arborescence → Excel** — exporte la structure des dossiers
-- **HTML → Markdown** — convertit des captures web (SingleFile)
-
-#### 🔤 Données
-- **Convertir un tableau** — CSV ↔ Excel ↔ JSON
-- **Nettoyer des lignes** — filtre et déduplique des lignes
-
-#### 🗣️ Voix & langues
-- **Lire un texte à voix haute** — synthèse vocale locale (Kokoro)
-- **Traduire un texte** — hors-ligne, ~200 langues (NLLB-200)
-- **Transcrire un audio / une vidéo** — texte + sous-titres (Whisper)
-
-#### 🎼 Bibliothèque perso
-- **Catalogue de la bibliothèque** — scanne un NAS en CSV/Excel
-- **Uniformiser les noms** — nettoie les noms dossiers/fichiers
-- **Regrouper les singles** — isole les albums à un seul titre
-
-#### 📚 Bibliothèque municipale
-- **Trier des cotes** — classe par cote (Dewey ou archive)
-- **Vérifier la disponibilité BM Lyon** — statut actuel au catalogue
-- **Récolter les CD d'artistes** — liste tous les CD trouvés
+| Catégorie | Outils |
+|---|---|
+| 🎵 Audio | **Normaliser des FLAC** — corrige le gain audio<br>**Convertir un format** — bascule entre formats audio<br>**Extraire l'audio d'une vidéo** — isole la piste audio<br>**Découper** — extrait un segment audio<br>**Normaliser le volume** — égalise le niveau sonore<br>**Renommer depuis les tags** — noms de fichiers ← métadonnées<br>**Éditer les tags en masse** — modifie ID3/Vorbis en lot |
+| 🖼️ Images | **Redimensionner / compresser** — réduit taille et poids<br>**Convertir de format** — bascule entre formats (dont HEIC)<br>**Trouver les doublons** — détecte images identiques/similaires<br>**Renuméroter** — renomme en séquence numérotée<br>**Apparier des fonds d'écran** — associe paysage ↔ portrait<br>**Auditer les fonds triés** — vérifie l'appariement effectué<br>**Dédupliquer les fonds triés** — retire les doublons triés<br>**Filigrane** — incruste un marquage texte |
+| 🎬 Vidéo | **Fusionner** — assemble plusieurs vidéos<br>**Découper** — extrait un segment vidéo<br>**Compresser** — réduit le poids vidéo<br>**Convertir** — bascule entre formats vidéo<br>**Extraire des images** — capture des images fixes<br>**Créer un GIF** — convertit un extrait en GIF |
+| 📄 PDF | **Extraire des pages** — isole certaines pages<br>**Fusionner** — assemble plusieurs PDF<br>**Supprimer / pivoter des pages** — édite la structure du PDF<br>**Images ↔ PDF** — convertit dans les deux sens<br>**Compresser** — réduit le poids du PDF<br>**Protéger / déprotéger** — gère le mot de passe<br>**Extraire le texte** — récupère le texte du PDF<br>**Filigrane** — incruste un marquage texte |
+| 📁 Fichiers | **Nettoyer les noms** — retire les caractères parasites<br>**Renommer en masse** — motif de renommage global<br>**Renommer depuis un CSV** — table ancien/nouveau nom<br>**Fichiers en double** — détecte les doublons par contenu<br>**Ranger automatiquement** — trie dans des sous-dossiers<br>**Statistiques** — compte et pèse un dossier<br>**Comparer deux dossiers** — diff de contenu<br>**Arborescence → Excel** — exporte la structure des dossiers<br>**HTML → Markdown** — convertit des captures web (SingleFile) |
+| 🔤 Données | **Convertir un tableau** — CSV ↔ Excel ↔ JSON<br>**Nettoyer des lignes** — filtre et déduplique des lignes |
+| 🗣️ Voix & langues | **Lire un texte à voix haute** — synthèse vocale locale (Kokoro)<br>**Traduire un texte** — hors-ligne, ~200 langues (NLLB-200)<br>**Transcrire un audio / une vidéo** — texte + sous-titres (Whisper) |
+| 🎼 Bibliothèque perso | **Catalogue de la bibliothèque** — scanne un NAS en CSV/Excel<br>**Uniformiser les noms** — nettoie les noms dossiers/fichiers<br>**Regrouper les singles** — isole les albums à un seul titre |
+| 📚 Bibliothèque municipale | **Trier des cotes** — classe par cote (Dewey ou archive)<br>**Vérifier la disponibilité BM Lyon** — statut actuel au catalogue<br>**Récolter les CD d'artistes** — liste tous les CD trouvés |
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
