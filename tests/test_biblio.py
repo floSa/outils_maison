@@ -88,3 +88,69 @@ def test_trier_fichier(tmp_path):
     f.write_text("B - X - 786.2 MAL\nA - Y - 786.1 KNI\n", encoding="utf-8")
     biblio.trier_fichier(f)
     assert f.read_text(encoding="utf-8").splitlines()[0].endswith("786.1 KNI")
+
+
+def test_tri_cote_lettres_puis_chiffres_numerique_pas_alphabetique():
+    # Régression : comparer "D 9179" et "D 61385" comme du TEXTE les classerait
+    # dans le mauvais ordre ('9' > '6' au premier caractère). Le tri doit être
+    # numérique dans le préfixe de lettres.
+    txt = "A - X - D 61385\nB - Y - D 9179\nC - Z - D 500"
+    tries = biblio.trier_par_cote(biblio.parser_lignes(txt))
+    assert [e.cote for e in tries] == ["D 500", "D 9179", "D 61385"]
+
+
+def test_tri_cote_dewey_avant_lettres():
+    txt = "A - X - D 100\nB - Y - 786.1 KNI"
+    tries = biblio.trier_par_cote(biblio.parser_lignes(txt))
+    assert tries[0].cote == "786.1 KNI"
+    assert tries[1].cote == "D 100"
+
+
+def test_tri_cote_prefixes_differents_groupes_separement():
+    txt = "A - X - LA002499\nB - Y - D 500"
+    tries = biblio.trier_par_cote(biblio.parser_lignes(txt))
+    # "d" < "la" alphabétiquement : le préfixe D passe avant LA.
+    assert [e.cote for e in tries] == ["D 500", "LA002499"]
+
+
+# --- parser_texte (dash OU virgule, détecté ligne par ligne) --------------------
+
+def test_parser_texte_tirets():
+    [e] = biblio.parser_texte("Cliff Martinez - The Knick - 786.1 KNI 3")
+    assert e.artiste == "Cliff Martinez"
+    assert e.album == "The Knick"
+    assert e.cote == "786.1 KNI 3"
+
+
+def test_parser_texte_virgules():
+    [e] = biblio.parser_texte("Cliff Martinez, The Knick, 786.1 KNI 3")
+    assert e.artiste == "Cliff Martinez"
+    assert e.album == "The Knick"
+    assert e.cote == "786.1 KNI 3"
+
+
+def test_parser_texte_espaces_superflus_retires():
+    [e] = biblio.parser_texte("  Cliff Martinez  ,  The Knick  ,  786.1 KNI 3  ")
+    assert e.artiste == "Cliff Martinez"
+    assert e.album == "The Knick"
+    assert e.cote == "786.1 KNI 3"
+
+
+def test_parser_texte_mixte_tirets_et_virgules():
+    txt = "Cliff Martinez - The Knick - 786.1 KNI 3\nFakear, Sauvage, 784.FAK 51"
+    entrees = biblio.parser_texte(txt)
+    assert [e.artiste for e in entrees] == ["Cliff Martinez", "Fakear"]
+    assert [e.cote for e in entrees] == ["786.1 KNI 3", "784.FAK 51"]
+
+
+def test_parser_texte_entete_ignoree():
+    txt = "Artiste,Album,Cote\nFakear,Sauvage,784.FAK 51"
+    [e] = biblio.parser_texte(txt)
+    assert e.artiste == "Fakear"
+
+
+def test_parser_texte_virgule_sans_cote():
+    [e] = biblio.parser_texte("Fakear, Sauvage")
+    assert e.artiste == "Fakear"
+    assert e.album == "Sauvage"
+    assert e.cote == ""

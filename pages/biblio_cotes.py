@@ -2,11 +2,20 @@ from pathlib import Path
 
 import streamlit as st
 
-from tools.biblio import formater, parser_lignes, trier_par_cote
-from ui import FILETYPES_TEXTE, champ_fichier
+from tools.biblio import formater, parser_texte, trier_par_cote
+from ui import champ_fichier
+
+FILETYPES_TEXTE_OU_CSV = [
+    ("Texte ou CSV", "*.txt *.csv"),
+    ("Tous les fichiers", "*.*"),
+]
 
 st.title("📇 Trier des cotes de bibliothèque")
-st.caption("Trie des entrées « Artiste - Album - Cote » par cote (type Dewey musique).")
+st.caption(
+    "Trie des entrées « Artiste - Album - Cote » ou « Artiste, Album, Cote » "
+    "(séparateur détecté ligne par ligne) par cote (type Dewey musique, ou "
+    "lettres + chiffres pour les cotes d'archive)."
+)
 
 col_source, col_btn = st.columns([4, 1], vertical_alignment="bottom")
 source = col_source.radio("Source", ["Coller du texte", "Fichier"], horizontal=True)
@@ -15,19 +24,22 @@ texte = ""
 chemin = ""
 if source == "Coller du texte":
     texte = st.text_area(
-        "Lignes à trier",
+        "Lignes à trier (tirets ou virgules)",
         height=200,
-        placeholder="Cliff Martinez - The Knick - 786.1 KNI 3\nDanny Elfman - Alice - 786 B.O",
+        placeholder=(
+            "Cliff Martinez - The Knick - 786.1 KNI 3\n"
+            "Danny Elfman, Alice, 786 B.O"
+        ),
     )
 else:
     chemin = champ_fichier(
-        "Fichier texte",
+        "Fichier texte ou CSV",
         "biblio_cotes_chemin",
-        filetypes=FILETYPES_TEXTE,
-        placeholder="C:/Users/.../cotes_bibli.txt",
+        filetypes=FILETYPES_TEXTE_OU_CSV,
+        placeholder="C:/Users/.../cotes_bibli.txt ou .csv",
     )
     if chemin and Path(chemin).is_file():
-        texte = Path(chemin).read_text(encoding="utf-8")
+        texte = Path(chemin).read_text(encoding="utf-8-sig")
     elif chemin:
         st.error("Fichier introuvable.")
 
@@ -35,12 +47,12 @@ else:
 valider = col_btn.button("Valider", type="primary", use_container_width=True)
 
 if valider:
-    entrees = parser_lignes(texte)
+    entrees = parser_texte(texte)
     if not entrees:
         st.session_state.pop("cotes_resultat", None)
         st.error(
-            "Rien à trier : colle des lignes « Artiste - Album - Cote » "
-            "(une par ligne) ou choisis un fichier."
+            "Rien à trier : colle des lignes « Artiste - Album - Cote » ou "
+            "« Artiste, Album, Cote » (une par ligne) ou choisis un fichier."
         )
     else:
         st.session_state["cotes_resultat"] = formater(trier_par_cote(entrees))

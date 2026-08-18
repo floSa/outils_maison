@@ -17,11 +17,22 @@ class Entree:
     brut: str
 
 
+# Une cote commence par un chiffre (Dewey, ex. "786.1 PIN") OU par un court
+# préfixe de lettres (1 à 6, archives, ex. "D 500", "LA002499") immédiatement
+# suivi d'un chiffre — pas un titre d'album quelconque.
+_COTE_LETTRES_CHIFFRES = re.compile(r"^[A-Za-zÀ-ÿ]{1,6}\.?\s*\d")
+
+
+def _ressemble_a_une_cote(segment: str) -> bool:
+    return bool(re.match(r"\d", segment) or _COTE_LETTRES_CHIFFRES.match(segment))
+
+
 def parser_lignes(texte: str) -> list[Entree]:
     """Parse des lignes ``Artiste - Album - Cote``.
 
-    La cote est le dernier segment s'il commence par un chiffre (ex. ``786.1 PIN``).
-    Sinon l'entrée est conservée sans cote (triée en fin).
+    La cote est le dernier segment s'il ressemble à une cote (commence par un
+    chiffre, ex. ``786.1 PIN``, ou par un court préfixe de lettres suivi de
+    chiffres, ex. ``D 500``). Sinon l'entrée est conservée sans cote (triée en fin).
     """
     entrees: list[Entree] = []
     for ligne in texte.splitlines():
@@ -29,7 +40,7 @@ def parser_lignes(texte: str) -> list[Entree]:
         if not ligne:
             continue
         parts = [p.strip() for p in ligne.split(" - ")]
-        if len(parts) >= 2 and re.match(r"\d", parts[-1]):
+        if len(parts) >= 2 and _ressemble_a_une_cote(parts[-1]):
             artiste = parts[0]
             cote = parts[-1]
             album = " - ".join(parts[1:-1])
@@ -38,6 +49,42 @@ def parser_lignes(texte: str) -> list[Entree]:
             album = " - ".join(parts[1:])
             cote = ""
         entrees.append(Entree(artiste=artiste, album=album, cote=cote, brut=ligne))
+    return entrees
+
+
+_ENTETE_CSV = {"artiste,album,cote", "artiste;album;cote"}
+
+
+def parser_texte(texte: str) -> list[Entree]:
+    """Parse des lignes ``Artiste - Album - Cote`` OU ``Artiste, Album, Cote``,
+    séparateur détecté ligne par ligne (espaces superflus retirés autour de
+    chaque champ). Une éventuelle ligne d'en-tête ``Artiste,Album,Cote`` est
+    ignorée. Pratique pour un copier-coller depuis un tableur, quel que soit
+    le séparateur utilisé.
+    """
+    entrees: list[Entree] = []
+    for ligne in texte.splitlines():
+        brut = ligne.strip()
+        if not brut:
+            continue
+        if brut.lower().replace(" ", "") in _ENTETE_CSV:
+            continue
+        if " - " in brut:
+            entrees.extend(parser_lignes(brut))
+            continue
+        if "," in brut:
+            parts = [p.strip() for p in brut.split(",")]
+            if len(parts) >= 2 and _ressemble_a_une_cote(parts[-1]):
+                artiste = parts[0]
+                cote = parts[-1]
+                album = ", ".join(parts[1:-1])
+            else:
+                artiste = parts[0]
+                album = ", ".join(parts[1:])
+                cote = ""
+            entrees.append(Entree(artiste=artiste, album=album, cote=cote, brut=brut))
+            continue
+        entrees.append(Entree(artiste=brut, album="", cote="", brut=brut))
     return entrees
 
 
@@ -90,12 +137,34 @@ def extraire_colonne_artistes(df) -> list[str]:
     return [v for v in valeurs if v]
 
 
-def _cle_cote(e: Entree) -> tuple[float, str]:
-    """Clé de tri : partie numérique de la cote (Dewey) puis reste alphanumérique."""
-    m = re.match(r"(\d+(?:\.\d+)?)\s*(.*)", e.cote)
-    if not m:
-        return (float("inf"), e.cote.lower())  # sans cote → à la fin
-    return (float(m.group(1)), m.group(2).lower())
+_COTE_NUM = re.compile(r"\d+")
+
+
+def _cle_cote(e: Entree) -> tuple[int, str, float, str]:
+    """Clé de tri à 3 niveaux, pour ne jamais comparer les nombres comme du texte
+    (sinon "D 9179" > "D 61385" à tort : '9' > '6' au premier caractère) :
+
+    0. Cote Dewey (commence par un chiffre, ex. ``786.1 KNI``) : triée par sa
+       valeur numérique.
+    1. Cote « lettres + chiffres » (archives, ex. ``D 59179``, ``LA002499``) :
+       groupée par préfixe de lettres, puis triée numériquement dans ce préfixe.
+    2. Cote sans aucun chiffre, ou absente : en fin de liste, alphabétique.
+    """
+    cote = e.cote
+    if not cote:
+        return (2, "", 0.0, "")
+
+    m_dewey = re.match(r"(\d+(?:\.\d+)?)\s*(.*)", cote)
+    if m_dewey:
+        return (0, "", float(m_dewey.group(1)), m_dewey.group(2).lower())
+
+    m_num = _COTE_NUM.search(cote)
+    if m_num:
+        prefixe = cote[: m_num.start()].strip().lower()
+        reste = cote[m_num.end() :].strip().lower()
+        return (1, prefixe, float(m_num.group()), reste)
+
+    return (2, cote.lower(), 0.0, "")
 
 
 def trier_par_cote(entrees: list[Entree]) -> list[Entree]:
