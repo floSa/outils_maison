@@ -94,12 +94,19 @@ def parser_notice(txt: str) -> tuple[str, str]:
 
     Sur la page de résultats le libellé est en ordre NATUREL — source la plus
     fiable pour filtrer par auteur.
+
+    Le catalogue accole parfois un rôle après une virgule ("Gabi Hartmann,
+    chant", "Gabi Hartmann, chant & guitare") ou plusieurs auteurs séparés par
+    virgule : on ne garde que le premier segment, sinon la similarité avec le
+    nom recherché seul chute sous le seuil de matching (régression constatée :
+    "Gabi Hartmann" non retrouvé alors que bien présent au catalogue).
     """
     if " / " not in txt:
         return txt.split("[")[0].strip(), ""
     left, right = txt.split(" / ", 1)
     title = left.split("[")[0].strip()
     author = re.split(r"[;.]", right)[0].strip()
+    author = author.split(",")[0].strip()
     return title, author
 
 
@@ -432,6 +439,12 @@ def recolter_disques_artistes(
     total_recherches = sum(len(noms) for _, noms in tous_les_noms) or 1
     compteur = 0
 
+    # Cache par nom normalisé (un même artiste répété sur plusieurs lignes/
+    # groupes n'est recherché qu'une fois) et par fiche (Part-Dieu lu une
+    # seule fois même si plusieurs groupes retombent sur le même disque).
+    cache_notices: dict[str, list[dict]] = {}
+    cache_fiches: dict[str, tuple[list[str], list[str]]] = {}
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
@@ -452,16 +465,24 @@ def recolter_disques_artistes(
                 compteur += 1
                 if progress:
                     progress(compteur, total_recherches)
-                _log(f"🔍 {nom} : recherche au catalogue…")
-                try:
-                    notices = _harvest_artist_cd_notices(page, nom)
-                    if not notices:
-                        # Retry : cf. verifier_disponibilites (aléa réseau/timing).
-                        time.sleep(2)
+
+                cle_nom = normalize(nom)
+                if cle_nom in cache_notices:
+                    _log(f"🔁 {nom} : déjà recherché, résultat réutilisé")
+                    notices = cache_notices[cle_nom]
+                else:
+                    _log(f"🔍 {nom} : recherche au catalogue…")
+                    try:
                         notices = _harvest_artist_cd_notices(page, nom)
-                except Exception as e:
-                    _log(f"   💥 {nom} : {e}")
-                    continue
+                        if not notices:
+                            # Retry : cf. verifier_disponibilites (aléa réseau/timing).
+                            time.sleep(2)
+                            notices = _harvest_artist_cd_notices(page, nom)
+                    except Exception as e:
+                        _log(f"   💥 {nom} : {e}")
+                        continue
+                    cache_notices[cle_nom] = notices
+
                 for nt in notices:
                     href = nt["href"]
                     score = name_similarity(nom, nt["author"])
@@ -479,11 +500,15 @@ def recolter_disques_artistes(
                 continue
 
             for href, info in fiches.items():
-                try:
-                    cotes, statuts = _lire_part_dieu(page, href)
-                except Exception as e:
-                    _log(f"   💥 {info['title']} : {e}")
-                    continue
+                if href in cache_fiches:
+                    cotes, statuts = cache_fiches[href]
+                else:
+                    try:
+                        cotes, statuts = _lire_part_dieu(page, href)
+                    except Exception as e:
+                        _log(f"   💥 {info['title']} : {e}")
+                        continue
+                    cache_fiches[href] = (cotes, statuts)
                 if not cotes:
                     continue
                 for cote, statut in zip(cotes, statuts):

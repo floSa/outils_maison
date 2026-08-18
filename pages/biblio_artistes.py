@@ -26,6 +26,11 @@ st.caption(
     "recherché est inclus dans le nom trouvé (ex. « Bourvil » dans "
     "« André Bourvil »)."
 )
+st.caption(
+    "Journal pendant la récolte : 🔍 recherche en cours · 🔁 artiste déjà "
+    "recherché (résultat réutilisé, pas de nouvelle requête) · ✅ disque "
+    "retenu avec sa cote · ❌ aucun CD trouvé pour ce nom · 💥 erreur réseau."
+)
 
 # --- Dépendance navigateur (Playwright) ---------------------------------------
 try:

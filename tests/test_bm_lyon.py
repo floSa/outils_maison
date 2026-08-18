@@ -49,6 +49,20 @@ def test_parser_notice_sans_auteur():
     assert a == ""
 
 
+def test_parser_notice_role_apres_virgule():
+    # Régression réelle : le catalogue accole un rôle après une virgule
+    # ("Gabi Hartmann, chant"), ce qui faisait chuter la similarité sous le
+    # seuil et ratait un artiste pourtant bien présent au catalogue.
+    t, a = parser_notice("La femme aux yeux de sel [Disque compact] / Gabi Hartmann, chant")
+    assert t == "La femme aux yeux de sel"
+    assert a == "Gabi Hartmann"
+
+
+def test_parser_notice_plusieurs_auteurs_virgule():
+    t, a = parser_notice("Super 8 [Disque compact] / Synapson, Tim Dup, Lass")
+    assert a == "Synapson"
+
+
 # --- extraction Part-Dieu -------------------------------------------------------
 
 def test_extraire_part_dieu_simple():
