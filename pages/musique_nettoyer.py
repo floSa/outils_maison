@@ -11,7 +11,7 @@ from tools.clean_library import (
 )
 from ui import champ_dossier
 
-st.title("🧼 Nettoyer la bibliothèque")
+st.title("🧼 Uniformiser les noms")
 st.caption("Structure attendue : `Artiste / Album / Titres`. Cet outil :")
 st.markdown(
     """

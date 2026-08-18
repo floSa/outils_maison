@@ -74,8 +74,7 @@ sections = {
     ],
     "🎼 Bibliothèque perso": [
         page("musique_catalogue.py", "Catalogue de la bibliothèque", "🎵"),
-        page("musique_nettoyer.py", "Nettoyer la bibliothèque", "🧼"),
-        page("musique_verifier.py", "Vérifier les titres", "🔍"),
+        page("musique_nettoyer.py", "Uniformiser les noms", "🧼"),
         page("musique_singles.py", "Regrouper les singles", "🎼"),
     ],
     "📚 Bibliothèque municipale": [
