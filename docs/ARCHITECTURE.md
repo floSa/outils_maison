@@ -45,7 +45,7 @@ chacun leur modèle une seule fois (GitHub / HuggingFace), puis fonctionnent hor
 | [`traduction.py`](../tools/traduction.py) | Traduction hors-ligne (200 langues, CPU/GPU), téléchargement du modèle | `ctranslate2`, `transformers` (tokenizer), `sentencepiece` |
 | [`transcription.py`](../tools/transcription.py) | Transcription audio/vidéo → texte + sous-titres (CPU/GPU), téléchargement du modèle | `faster-whisper` (CTranslate2), `av` |
 
-> Les 51 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
+> Les 50 pages de [`pages/`](../pages/) sont de fines enveloppes UI au-dessus de ces
 > modules (une page = un outil, cf. la navigation dans [`app.py`](../app.py)).
 
 ---

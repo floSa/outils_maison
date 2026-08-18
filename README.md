@@ -43,16 +43,74 @@ uv run streamlit run app.py
 
 ## Outils
 
-| Catégorie | Outils |
-|---|---|
-| Audio | Normaliser des FLAC · Convertir · Extraire l'audio d'une vidéo · Découper · Normaliser le volume · Renommer / éditer les tags · Regrouper les singles |
-| Images | Redimensionner / compresser · Convertir (dont HEIC) · Doublons · Renuméroter · Apparier des fonds d'écran · Auditer les fonds triés · Filigrane |
-| Vidéo | Fusionner · Découper · Compresser · Convertir · Extraire des images · Créer un GIF |
-| PDF | Extraire des pages · Fusionner · Supprimer / pivoter · Images ↔ PDF · Compresser · Protéger / déprotéger · Extraire le texte · Filigrane |
-| Fichiers | Nettoyer les noms · Renommer en masse · Renommer depuis un CSV · Doublons · Ranger automatiquement · Statistiques · Comparer deux dossiers · Arborescence → Excel · HTML → Markdown (captures SingleFile) |
-| Données | Convertir CSV ↔ Excel ↔ JSON · Nettoyer des lignes |
-| Voix & langues | Lire un texte à voix haute (Kokoro) · Traduire, 200 langues (NLLB-200) · Transcrire un audio/vidéo + sous-titres (Whisper) — tout en local, sans PyTorch |
-| Biblio | Trier des cotes · Vérifier la disponibilité BM Lyon (texte ou CSV) · Récolter les CD d'artistes au catalogue |
+49 outils, répartis en 9 catégories (calées sur la navigation de `app.py`).
+
+#### 🎵 Audio
+- **Normaliser des FLAC** — corrige le gain audio
+- **Convertir un format** — bascule entre formats audio
+- **Extraire l'audio d'une vidéo** — isole la piste audio
+- **Découper** — extrait un segment audio
+- **Normaliser le volume** — égalise le niveau sonore
+- **Renommer depuis les tags** — noms de fichiers ← métadonnées
+- **Éditer les tags en masse** — modifie ID3/Vorbis en lot
+
+#### 🖼️ Images
+- **Redimensionner / compresser** — réduit taille et poids
+- **Convertir de format** — bascule entre formats (dont HEIC)
+- **Trouver les doublons** — détecte images identiques/similaires
+- **Renuméroter** — renomme en séquence numérotée
+- **Apparier des fonds d'écran** — associe paysage ↔ portrait
+- **Auditer les fonds triés** — vérifie l'appariement effectué
+- **Dédupliquer les fonds triés** — retire les doublons triés
+- **Filigrane** — incruste un marquage texte
+
+#### 🎬 Vidéo
+- **Fusionner** — assemble plusieurs vidéos
+- **Découper** — extrait un segment vidéo
+- **Compresser** — réduit le poids vidéo
+- **Convertir** — bascule entre formats vidéo
+- **Extraire des images** — capture des images fixes
+- **Créer un GIF** — convertit un extrait en GIF
+
+#### 📄 PDF
+- **Extraire des pages** — isole certaines pages
+- **Fusionner** — assemble plusieurs PDF
+- **Supprimer / pivoter des pages** — édite la structure du PDF
+- **Images ↔ PDF** — convertit dans les deux sens
+- **Compresser** — réduit le poids du PDF
+- **Protéger / déprotéger** — gère le mot de passe
+- **Extraire le texte** — récupère le texte du PDF
+- **Filigrane** — incruste un marquage texte
+
+#### 📁 Fichiers
+- **Nettoyer les noms** — retire les caractères parasites
+- **Renommer en masse** — motif de renommage global
+- **Renommer depuis un CSV** — table ancien/nouveau nom
+- **Fichiers en double** — détecte les doublons par contenu
+- **Ranger automatiquement** — trie dans des sous-dossiers
+- **Statistiques** — compte et pèse un dossier
+- **Comparer deux dossiers** — diff de contenu
+- **Arborescence → Excel** — exporte la structure des dossiers
+- **HTML → Markdown** — convertit des captures web (SingleFile)
+
+#### 🔤 Données
+- **Convertir un tableau** — CSV ↔ Excel ↔ JSON
+- **Nettoyer des lignes** — filtre et déduplique des lignes
+
+#### 🗣️ Voix & langues
+- **Lire un texte à voix haute** — synthèse vocale locale (Kokoro)
+- **Traduire un texte** — hors-ligne, ~200 langues (NLLB-200)
+- **Transcrire un audio / une vidéo** — texte + sous-titres (Whisper)
+
+#### 🎼 Bibliothèque perso
+- **Catalogue de la bibliothèque** — scanne un NAS en CSV/Excel
+- **Uniformiser les noms** — nettoie les noms dossiers/fichiers
+- **Regrouper les singles** — isole les albums à un seul titre
+
+#### 📚 Bibliothèque municipale
+- **Trier des cotes** — classe par cote (Dewey ou archive)
+- **Vérifier la disponibilité BM Lyon** — statut actuel au catalogue
+- **Récolter les CD d'artistes** — liste tous les CD trouvés
 
 > Les outils audio/vidéo utilisent le **ffmpeg embarqué** par `imageio-ffmpeg` (aucune
 > installation système requise).
