@@ -6,6 +6,7 @@ from tools.bm_lyon import (
     cote_equivalente,
     extraire_part_dieu,
     name_similarity,
+    nettoyer_auteur_dom,
     parser_notice,
     suffixe_confiance,
 )
@@ -61,6 +62,30 @@ def test_parser_notice_role_apres_virgule():
 def test_parser_notice_plusieurs_auteurs_virgule():
     t, a = parser_notice("Super 8 [Disque compact] / Synapson, Tim Dup, Lass")
     assert a == "Synapson"
+
+
+# --- champ « Auteur : » distinct (encart DOM, plus fiable que la citation) ------
+
+def test_nettoyer_auteur_dom_compteur_facette():
+    # La virgule d'inversion "Nom, Prénom" est retirée (pas seulement la
+    # date) : name_similarity compare des mots triés, l'ordre nom/prénom
+    # n'a pas besoin d'être détecté, et la virgule ne fait que baisser le score.
+    assert nettoyer_auteur_dom("Hartmann, Gabi, (1991-....) [4]") == "Hartmann Gabi"
+
+
+def test_nettoyer_auteur_dom_plusieurs_roles():
+    assert (
+        nettoyer_auteur_dom("Cosma, Vladimir, (1940-....) [Compositeur] [Chef d'orchestre] [141]")
+        == "Cosma Vladimir"
+    )
+
+
+def test_nettoyer_auteur_dom_groupe():
+    assert nettoyer_auteur_dom("IAM (groupe) [22]") == "IAM"
+
+
+def test_nettoyer_auteur_dom_vide():
+    assert nettoyer_auteur_dom("") == ""
 
 
 # --- extraction Part-Dieu -------------------------------------------------------

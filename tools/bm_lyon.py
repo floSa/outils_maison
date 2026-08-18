@@ -4,16 +4,32 @@ Cas d'usage : on connaît DÉJÀ artiste + album + cote (export précédent) et 
 veut re-vérifier le statut ACTUEL ("En rayon", "Prêté - retour prévu le…"),
 qui change dans le temps.
 
-Logique de scraping reprise de Musique_Tools (éprouvée sur ~900 albums) :
-recherche de l'ARTISTE seul (l'album précis est mal indexé/dispersé), facette
-"CD musicaux", scroll lazy-load, filtre auteur sur le libellé en ordre naturel
-"Titre [Disque compact] / Prénom Nom", puis lecture du bloc Part-Dieu sur la
-fiche du meilleur album.
+Logique de scraping reprise de Musique_Tools (éprouvée sur ~900 albums), avec
+une amélioration : la récolte par artiste (`_harvest_artist_cd_notices`) se
+fait en **2 temps** plutôt que par matching disque par disque.
+1. Recherche de l'ARTISTE seul (l'album précis est mal indexé/dispersé) ;
+   parmi les auteurs affichés dans les résultats (champ « Auteur : », un par
+   notice), on identifie celui qui correspond réellement à l'artiste cherché
+   — **une seule décision de matching**, sur un nom d'auteur propre (pas le
+   texte de citation qui mélange rôles et co-intervenants, ex. "Gabi
+   Hartmann, chant & guitare").
+2. Une fois cet auteur identifié, on **pivote sur sa fiche-autorité** : le
+   catalogue renvoie alors lui-même toutes les ressources qui lui sont
+   attribuées (y compris en tant que contributeur sur une compilation), sans
+   avoir à re-matcher chaque disque un par un. Puis facette "CD musicaux",
+   scroll lazy-load, lecture du bloc Part-Dieu sur la fiche du meilleur album.
 
-Deux corrections de bugs à NE PAS régresser (héritées de Musique_Tools) :
+Corrections de bugs à NE PAS régresser (héritées de Musique_Tools ou
+constatées en usage réel) :
 - le filtre auteur utilise ``allow_subset=True`` : le catalogue écrit souvent
   un nom de scène seul ("Bourvil") quand on cherche le nom complet ("André
   Bourvil") — sans cette tolérance, des artistes bien réels sont rejetés ;
+- ``nettoyer_auteur_dom`` retire la date de naissance ("(1991-....)") et la
+  virgule d'inversion "Nom, Prénom" du champ auteur — inutile de détecter
+  l'inversion pour la corriger, ``name_similarity`` compare déjà les mots
+  triés des deux côtés (ordre indifférent), la virgule ne fait que dégrader
+  le score (régression réelle : "Gabi Hartmann" catalogué "Hartmann, Gabi,
+  (1991-....) [chant]" ne matchait plus le nom cherché) ;
 - le bloc "Part-Dieu\\n<cote> - <statut>" se découpe sur la PREMIÈRE
   occurrence de " - " (``split(" - ", 1)``), car le statut peut lui-même
   contenir " - " ("Prêté - Retour prévu le : 06/08/2026") ; un ``rsplit``
@@ -27,6 +43,7 @@ from __future__ import annotations
 
 import difflib
 import re
+import threading
 import time
 import unicodedata
 from dataclasses import dataclass, field
@@ -87,6 +104,25 @@ def artist_name_matches(found: str, target: str, allow_subset: bool = False) -> 
                 and all(len(tok) >= 5 for tok in f_tokens)):
             return True
     return False
+
+
+def nettoyer_auteur_dom(texte: str) -> str:
+    """Nettoie le champ « Auteur : » du catalogue (encart distinct de la fiche,
+    lien vers l'autorité — ex. ``"Hartmann, Gabi, (1991-....) [4]"``), plus
+    fiable que le texte de citation car il ne mélange pas les rôles des
+    autres intervenants. Retire les rôles/compteurs entre crochets
+    (``"[Compositeur]"``, ``"[141]"``), les dates entre parenthèses
+    (``"(1940-....)"``), et la virgule d'inversion "Nom, Prénom" (inutile ici :
+    ``name_similarity`` compare déjà les mots triés des deux côtés, donc
+    l'ordre nom/prénom n'a pas besoin d'être détecté ni corrigé — la virgule
+    ne fait que dégrader légèrement le score).
+    """
+    if not texte:
+        return ""
+    texte = re.sub(r"\[[^\]]*\]", "", texte)
+    texte = re.sub(r"\([^)]*\)", "", texte)
+    texte = texte.replace(",", " ")
+    return re.sub(r"\s+", " ", texte).strip()
 
 
 def parser_notice(txt: str) -> tuple[str, str]:
@@ -190,13 +226,26 @@ def _bm_search_input(page):
     return None
 
 
-def _harvest_artist_cd_notices(page, artist_q: str, max_notices: int = 25) -> list[dict]:
-    """Récolte les CD d'un artiste : recherche artiste + facette CD + scroll.
+def _defiler_jusqua_stable(page, selecteur: str, iterations: int = 15) -> None:
+    """Scroll la page jusqu'à ce que le nombre d'éléments `selecteur` se stabilise
+    (lazy-load du catalogue)."""
+    prev = -1
+    for _ in range(iterations):
+        n = page.locator(selecteur).count()
+        if n == prev:
+            break
+        prev = n
+        page.mouse.wheel(0, 6000)
+        time.sleep(0.8)
 
-    Retourne [{title, author, href}] dédoublonné par titre.
+
+def _lister_auteurs_candidats(page, artist_q: str) -> list[dict]:
+    """Recherche `artist_q` en texte libre et renvoie les candidats distincts
+    du champ « Auteur : » trouvés dans les résultats (texte nettoyé + href
+    vers la fiche-autorité, qui scope TOUTES les ressources de cet auteur).
+
+    Une entrée par auteur distinct (dédoublonné par href).
     """
-    if not artist_q:
-        return []
     try:
         page.goto(f"{BM_HOME}/", wait_until="domcontentloaded", timeout=20000)
         try:
@@ -211,6 +260,76 @@ def _harvest_artist_cd_notices(page, artist_q: str, max_notices: int = 25) -> li
         inp.press("Enter")
         time.sleep(4)
 
+        _defiler_jusqua_stable(page, "div.meta-label")
+
+        paires = page.eval_on_selector_all(
+            "div.meta-label",
+            r"""
+            els => els.filter(lbl => /^Auteur/i.test(lbl.textContent.trim())).map(lbl => {
+                const lien = lbl.parentElement.querySelector('.meta-values a');
+                if (!lien) return null;
+                return {
+                    texte: (lien.textContent || '').replace(/\s+/g, ' ').trim(),
+                    href: lien.getAttribute('href') || '',
+                };
+            }).filter(o => o && o.href)
+            """
+        )
+    except Exception:
+        return []
+
+    vus: set = set()
+    candidats: list[dict] = []
+    for p in paires:
+        if not p or p["href"] in vus:
+            continue
+        vus.add(p["href"])
+        auteur = nettoyer_auteur_dom(p["texte"])
+        if auteur:
+            candidats.append({"auteur": auteur, "href": p["href"]})
+    return candidats
+
+
+def _harvest_artist_cd_notices(page, artist_q: str, max_notices: int = 25) -> list[dict]:
+    """Récolte les CD d'un artiste, en 2 temps plutôt que par matching disque
+    par disque :
+
+    1. Recherche `artist_q`, repère parmi les auteurs affichés (champ
+       « Auteur : », un par notice) celui qui correspond réellement à
+       `artist_q` (seuil `SEUIL_ARTISTE`, ``allow_subset=True`` — cf.
+       docstring module : "Bourvil" ⊂ "André Bourvil"). **Une seule décision
+       de matching**, sur un nom d'auteur propre (pas le texte de citation
+       mêlant rôles et co-intervenants).
+    2. Une fois cet auteur identifié, on pivote sur SA fiche : le catalogue
+       renvoie alors lui-même TOUTES les ressources qui lui sont attribuées
+       (y compris en tant que contributeur sur une compilation), sans qu'on
+       ait à re-matcher chaque disque un par un — élimine le risque de faux
+       positifs/négatifs par disque (rôle accolé, auteur principal différent
+       sur une BO, etc.).
+
+    Retourne [{title, author, href}] dédoublonné par titre, `author` étant le
+    nom d'auteur retenu à l'étape 1 (identique pour tous les disques rendus).
+    """
+    if not artist_q:
+        return []
+
+    candidats = _lister_auteurs_candidats(page, artist_q)
+    meilleur, meilleur_score = None, 0.0
+    for c in candidats:
+        if not artist_name_matches(c["auteur"], artist_q, allow_subset=True):
+            continue
+        score = name_similarity(c["auteur"], artist_q)
+        if score > meilleur_score:
+            meilleur, meilleur_score = c, score
+    if meilleur is None:
+        return []
+
+    try:
+        href = meilleur["href"]
+        url = href if href.startswith("http") else BM_HOME + href
+        page.goto(url, wait_until="domcontentloaded", timeout=20000)
+        time.sleep(2)
+
         # Facette 'CD musicaux' (best-effort) : réduit le bruit DVD/livres.
         try:
             cd = page.get_by_text(re.compile(r"CD musicaux", re.I)).first
@@ -220,15 +339,7 @@ def _harvest_artist_cd_notices(page, artist_q: str, max_notices: int = 25) -> li
         except Exception:
             pass
 
-        # Dérouler jusqu'à stabiliser le nombre de notices (lazy-load).
-        prev = -1
-        for _ in range(15):
-            n = page.locator("a[href*='/notice']").count()
-            if n == prev:
-                break
-            prev = n
-            page.mouse.wheel(0, 6000)
-            time.sleep(0.8)
+        _defiler_jusqua_stable(page, "a[href*='/notice']")
 
         pairs = page.eval_on_selector_all(
             "a[href*='/notice']",
@@ -241,20 +352,21 @@ def _harvest_artist_cd_notices(page, artist_q: str, max_notices: int = 25) -> li
     seen: set = set()
     for o in pairs:
         txt = o["t"]
+        # Filet de sécurité si la facette CD musicaux n'a pas pris (best-effort) :
+        # on ne garde que les CD, même si la page est déjà scopée au bon auteur.
         if "disque compact" not in normalize(txt):
             continue
-        title, author = parser_notice(txt)
-        # allow_subset=True indispensable ici (cf. docstring module : Bourvil).
-        if not title or not artist_name_matches(author, artist_q, allow_subset=True):
+        title, _ = parser_notice(txt)
+        if not title:
             continue
         key = normalize(title)
         if not key or key in seen:
             continue
         seen.add(key)
-        href = o["href"]
-        if href.startswith("/"):
-            href = BM_HOME + href
-        out.append({"title": title, "author": author, "href": href})
+        href2 = o["href"]
+        if href2.startswith("/"):
+            href2 = BM_HOME + href2
+        out.append({"title": title, "author": meilleur["auteur"], "href": href2})
         if len(out) >= max_notices:
             break
     return out
@@ -399,6 +511,7 @@ def recolter_disques_artistes(
     *,
     log: Callable[[str], None] | None = None,
     progress: Callable[[int, int], None] | None = None,
+    arret: threading.Event | None = None,
 ) -> list[DisqueArtiste]:
     """Pour chaque groupe d'artistes, récolte tous les CD disponibles à la Part-Dieu.
 
@@ -412,6 +525,10 @@ def recolter_disques_artistes(
     `progress(i, total)` est appelé à chaque **nom individuel** recherché
     (pas à chaque ligne du fichier) : `total` est la somme des noms sur tous
     les groupes, pour que la barre avance aussi sur les cellules multi-artistes.
+
+    `arret` : `threading.Event` optionnel, vérifié entre deux groupes (pas en
+    cours de groupe multi-artistes) — permet d'interrompre une récolte longue
+    depuis l'UI (bouton Arrêter) tout en gardant les résultats déjà trouvés.
 
     Le score de similarité artiste (0 à 1, seuil d'acceptation 0.85 — ou
     accepté en-dessous si `artiste_recherche` est un sous-ensemble strict de
@@ -455,6 +572,9 @@ def recolter_disques_artistes(
         page = context.new_page()
 
         for groupe, noms in tous_les_noms:
+            if arret is not None and arret.is_set():
+                _log("⏹ Arrêt demandé — récolte interrompue, résultats déjà trouvés conservés.")
+                break
             if not noms:
                 continue
 
